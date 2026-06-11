@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ALPS — AI Learning Path Selector</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+  <style>
+    :root {
+      --color-background-primary:   #ffffff;
+      --color-background-secondary: #f8f9fa;
+      --color-background-success:   #f0fdf4;
+      --color-background-warning:   #fffbeb;
+      --color-background-danger:    #fef2f2;
+      --color-background-info:      #eff6ff;
+      --color-text-primary:         #111827;
+      --color-text-secondary:       #6b7280;
+      --color-text-tertiary:        #9ca3af;
+      --color-text-success:         #16a34a;
+      --color-text-warning:         #d97706;
+      --color-text-danger:          #dc2626;
+      --color-text-info:            #2563eb;
+      --color-border-tertiary:      #e5e7eb;
+      --color-border-secondary:     #d1d5db;
+      --color-border-success:       #bbf7d0;
+      --color-border-warning:       #fde68a;
+      --color-border-danger:        #fecaca;
+      --color-border-info:          #bfdbfe;
+      --border-radius-lg:           12px;
+      --border-radius-md:           8px;
+      --font-mono:                  'JetBrains Mono', 'Fira Code', 'Courier New', monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      margin: 0;
+      background: var(--color-background-secondary);
+      min-height: 100vh;
+      color: var(--color-text-primary);
+    }
+    #app { max-width: 700px; margin: 0 auto; padding: 0 1rem; }
+    textarea { width: 100%; box-sizing: border-box; resize: vertical; }
+    .path-node {
+      width: 148px; flex-shrink: 0;
+      background: var(--color-background-primary);
+      border: 0.5px solid var(--color-border-tertiary);
+      border-radius: var(--border-radius-lg);
+      padding: 14px 12px 12px; position: relative; cursor: default;
+    }
+    .path-node:hover { border-color: var(--color-border-info); }
+    .connector {
+      display: flex; align-items: center; flex-shrink: 0;
+      color: var(--color-border-secondary); padding: 0 3px;
+    }
+    .tag-pill {
+      font-size: 9px; font-weight: 500; padding: 2px 6px;
+      border-radius: 4px; text-transform: uppercase; letter-spacing: 0.4px;
+      display: inline-block; margin-bottom: 8px;
+    }
+    .step-dot {
+      position: absolute; top: -11px; left: 11px;
+      width: 22px; height: 22px; border-radius: 50%;
+      background: var(--color-text-primary); color: var(--color-background-primary);
+      font-size: 9px; font-weight: 500; display: flex; align-items: center;
+      justify-content: center; font-family: var(--font-mono);
+    }
+    .s-pill {
+      border-radius: 5px; font-size: 11px; font-weight: 500;
+      padding: 2px 7px; font-family: var(--font-mono);
+    }
+    .tab-btn {
+      flex: 1; padding: 8px; border: none;
+      border-radius: var(--border-radius-md); font-size: 12px;
+      cursor: pointer; color: var(--color-text-secondary);
+      background: transparent; font-weight: 400;
+    }
+    .algo-row {
+      display: flex; justify-content: space-between;
+      align-items: center; padding: 9px 12px;
+    }
+    .scores-row {
+      display: grid; grid-template-columns: 1fr 40px 60px 72px 46px;
+      gap: 8px; padding: 8px 12px; align-items: center;
+    }
+    button { font-family: inherit; }
+    input[type=range] { cursor: pointer; }
+    body { transition: background-color .2s, color .2s; }
+    #theme-btn {
+      position: fixed; top: 14px; right: 16px; z-index: 100;
+      width: 32px; height: 32px; border-radius: 50%; border: 0.5px solid var(--color-border-tertiary);
+      background: var(--color-background-primary); color: var(--color-text-secondary);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 15px; transition: background .2s, border-color .2s;
+    }
+    #theme-btn:hover { color: var(--color-text-primary); border-color: var(--color-border-secondary); }
+
+    [data-theme="dark"] {
+      --color-background-primary:   #1e2025;
+      --color-background-secondary: #13151a;
+      --color-background-success:   #052e16;
+      --color-background-warning:   #2d1a00;
+      --color-background-danger:    #2d0a0a;
+      --color-background-info:      #0c1a3a;
+      --color-text-primary:         #f9fafb;
+      --color-text-secondary:       #9ca3af;
+      --color-text-tertiary:        #6b7280;
+      --color-text-success:         #4ade80;
+      --color-text-warning:         #fbbf24;
+      --color-text-danger:          #f87171;
+      --color-text-info:            #60a5fa;
+      --color-border-tertiary:      #2d3139;
+      --color-border-secondary:     #374151;
+      --color-border-success:       #166534;
+      --color-border-warning:       #92400e;
+      --color-border-danger:        #991b1b;
+      --color-border-info:          #1e3a8a;
+    }
+    [data-theme="dark"] textarea,
+    [data-theme="dark"] input[type=range] {
+      background: var(--color-background-secondary);
+      color: var(--color-text-primary);
+      border-color: var(--color-border-tertiary);
+    }
+  </style>
+</head>
+<body>
+<button id="theme-btn" onclick="toggleTheme()" aria-label="Toggle dark mode">
+  <i id="theme-icon" class="ti ti-moon"></i>
+</button>
+
+<div id="app">
+
+<!-- ── INPUT VIEW ─────────────────────────────────────────────────────────── -->
+<div id="v-input">
+  <div style="display:flex;align-items:center;justify-content:center;padding:2rem 0 1.5rem">
+    <div style="display:inline-flex;align-items:center;gap:10px;padding:8px 18px;background:var(--color-background-primary);border-radius:var(--border-radius-lg);border:0.5px solid var(--color-border-tertiary)">
+      <i class="ti ti-mountain" style="font-size:20px;color:var(--color-text-info)" aria-hidden="true"></i>
+      <span style="font-size:15px;font-weight:500;color:var(--color-text-primary)">ALPS</span>
+      <span style="font-size:11px;color:var(--color-text-secondary);border-left:0.5px solid var(--color-border-tertiary);padding-left:10px">AI learning path selector</span>
+    </div>
+  </div>
+
+  <div style="max-width:500px;margin:0 auto;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1.5rem">
+    <div style="margin-bottom:1.25rem">
+      <label for="obj-input" style="display:block;font-size:12px;color:var(--color-text-secondary);margin-bottom:6px">Learning objective</label>
+      <textarea id="obj-input" rows="3" placeholder="Describe what you want to learn or achieve...">I want to work as an ML engineer building models in production</textarea>
+    </div>
+
+    <div style="margin-bottom:1.25rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <label for="bslider" style="font-size:12px;color:var(--color-text-secondary)">Time budget</label>
+        <span id="bval" style="font-size:15px;font-weight:500;color:var(--color-text-info);font-family:var(--font-mono)">20h</span>
+      </div>
+      <input type="range" id="bslider" min="5" max="40" value="20" step="1" style="width:100%">
+      <div style="display:flex;justify-content:space-between;margin-top:4px">
+        <span style="font-size:11px;color:var(--color-text-tertiary)">5h</span>
+        <span id="zone-msg" style="font-size:11px;color:var(--color-text-success)">Recommended range (10–35h)</span>
+        <span style="font-size:11px;color:var(--color-text-tertiary)">40h</span>
+      </div>
+    </div>
+
+    <div id="cache-bar" style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:var(--border-radius-md);background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);margin-bottom:1.25rem">
+      <div style="display:flex;align-items:center;gap:8px">
+        <i id="cache-icon" class="ti ti-loader" style="font-size:15px;color:var(--color-text-tertiary)" aria-hidden="true"></i>
+        <span id="cache-msg" style="font-size:12px;color:var(--color-text-tertiary)">Checking cache…</span>
+      </div>
+      <button onclick="toggleCache()" style="font-size:11px;color:var(--color-text-info);background:none;border:none;cursor:pointer;font-weight:500;padding:2px 4px" id="cache-btn">Re-score</button>
+    </div>
+
+    <div id="input-error" style="display:none;padding:10px 12px;border-radius:var(--border-radius-md);background:var(--color-background-danger);border:0.5px solid var(--color-border-danger);margin-bottom:1.25rem;font-size:12px;color:var(--color-text-danger)"></div>
+
+    <button onclick="startRun()" style="width:100%;padding:13px;font-size:14px;font-weight:500;background:var(--color-text-primary);color:var(--color-background-primary);border:none;border-radius:var(--border-radius-md);cursor:pointer">
+      Find my path <i class="ti ti-arrow-right" aria-hidden="true"></i>
+    </button>
+  </div>
+
+  <p style="text-align:center;font-size:11px;color:var(--color-text-tertiary);margin:1rem 0">21 AI/ML resources · Groq / llama-3.1-8b-instant · greedy + hill climbing</p>
+</div>
+
+<!-- ── SCORING PROGRESS VIEW ──────────────────────────────────────────────── -->
+<div id="v-scoring" style="display:none;max-width:500px;margin:0 auto;padding:2rem 0">
+  <div style="display:flex;align-items:center;justify-content:center;margin-bottom:1.5rem">
+    <div style="display:inline-flex;align-items:center;gap:10px;padding:8px 18px;background:var(--color-background-primary);border-radius:var(--border-radius-lg);border:0.5px solid var(--color-border-tertiary)">
+      <i class="ti ti-mountain" style="font-size:20px;color:var(--color-text-info)" aria-hidden="true"></i>
+      <span style="font-size:15px;font-weight:500;color:var(--color-text-primary)">ALPS</span>
+    </div>
+  </div>
+  <div style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1.5rem">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem">
+      <i class="ti ti-brain" style="font-size:16px;color:var(--color-text-info)" aria-hidden="true"></i>
+      <span style="font-size:13px;font-weight:500;color:var(--color-text-primary)">Scoring resources with Groq LLM</span>
+    </div>
+    <div id="scoring-progress" style="font-family:var(--font-mono);font-size:12px;color:var(--color-text-secondary);line-height:1.8;max-height:320px;overflow-y:auto"></div>
+    <div style="margin-top:1rem">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-size:11px;color:var(--color-text-secondary)" id="scoring-label">Starting…</span>
+        <span style="font-size:11px;color:var(--color-text-secondary);font-family:var(--font-mono)" id="scoring-pct">0%</span>
+      </div>
+      <div style="height:4px;background:var(--color-background-secondary);border-radius:3px;overflow:hidden">
+        <div id="scoring-bar" style="width:0%;height:100%;background:var(--color-text-info);border-radius:3px;transition:width .3s ease"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── RESULTS VIEW ────────────────────────────────────────────────────────── -->
+<div id="v-results" style="display:none;padding:1.5rem 0 3rem">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+    <div style="display:flex;align-items:center;gap:8px">
+      <i class="ti ti-mountain" style="font-size:16px;color:var(--color-text-info)" aria-hidden="true"></i>
+      <div>
+        <div style="font-size:14px;font-weight:500;color:var(--color-text-primary)">ALPS</div>
+        <div id="results-subtitle" style="font-size:11px;color:var(--color-text-secondary)"></div>
+      </div>
+    </div>
+    <button onclick="showView('input')" style="font-size:12px;color:var(--color-text-secondary);background:none;border:none;cursor:pointer">
+      <i class="ti ti-arrow-left" aria-hidden="true"></i> New search
+    </button>
+  </div>
+
+  <div id="winner-card" style="display:flex;align-items:center;justify-content:space-between;background:var(--color-background-success);border:0.5px solid var(--color-border-success);border-radius:var(--border-radius-lg);padding:1rem 1.25rem;margin-bottom:1rem">
+    <div style="display:flex;align-items:center;gap:10px">
+      <i class="ti ti-trophy" style="font-size:22px;color:var(--color-text-success)" aria-hidden="true"></i>
+      <div>
+        <div id="winner-title" style="font-size:14px;font-weight:500;color:var(--color-text-success)"></div>
+        <div id="winner-subtitle" style="font-size:12px;color:var(--color-text-success);opacity:.8"></div>
+      </div>
+    </div>
+    <div style="text-align:right">
+      <div id="winner-pct" style="font-size:22px;font-weight:500;color:var(--color-text-success);font-family:var(--font-mono)"></div>
+      <div id="winner-vs" style="font-size:11px;color:var(--color-text-success);opacity:.8"></div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:4px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:4px;margin-bottom:1rem">
+    <button id="tb-path"   class="tab-btn" onclick="switchTab('path')">Your path</button>
+    <button id="tb-algo"   class="tab-btn" onclick="switchTab('algo')">Algorithms</button>
+    <button id="tb-scores" class="tab-btn" onclick="switchTab('scores')">All scores</button>
+  </div>
+
+  <!-- PATH TAB -->
+  <div id="tc-path" style="background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1.25rem">
+    <div style="display:flex;gap:28px;margin-bottom:1rem">
+      <div>
+        <div style="font-size:10px;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Utility</div>
+        <div id="path-utility" style="font-size:26px;font-weight:500;color:var(--color-text-success);font-family:var(--font-mono);line-height:1"></div>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Hours used</div>
+        <div id="path-hours" style="font-size:26px;font-weight:500;color:var(--color-text-primary);line-height:1"></div>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">Resources</div>
+        <div id="path-count" style="font-size:26px;font-weight:500;color:var(--color-text-primary);line-height:1"></div>
+      </div>
+    </div>
+    <div style="margin-bottom:1.25rem">
+      <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+        <span style="font-size:11px;color:var(--color-text-secondary)">Budget utilization</span>
+        <span id="path-util-pct" style="font-size:11px;color:var(--color-text-secondary);font-family:var(--font-mono)"></span>
+      </div>
+      <div style="height:5px;background:var(--color-background-secondary);border-radius:3px;overflow:hidden">
+        <div id="path-util-bar" style="height:100%;background:var(--color-text-success);border-radius:3px"></div>
+      </div>
+    </div>
+    <div style="overflow-x:auto;padding-bottom:8px">
+      <div id="path-nodes" style="display:flex;align-items:flex-start;min-width:max-content;padding-top:14px"></div>
+    </div>
+  </div>
+
+  <!-- ALGO TAB -->
+  <div id="tc-algo" style="display:none;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1.25rem">
+    <div id="algo-winner-banner" style="display:flex;align-items:center;justify-content:space-between;background:var(--color-background-success);border:0.5px solid var(--color-border-success);border-radius:var(--border-radius-md);padding:10px 14px;margin-bottom:1rem">
+      <div>
+        <div id="algo-winner-title" style="font-size:13px;font-weight:500;color:var(--color-text-success)"></div>
+        <div id="algo-winner-note" style="font-size:11px;color:var(--color-text-success);opacity:.8"></div>
+      </div>
+      <div style="text-align:right">
+        <div id="algo-winner-pct" style="font-size:20px;font-weight:500;color:var(--color-text-success);font-family:var(--font-mono)"></div>
+        <div id="algo-winner-delta" style="font-size:11px;color:var(--color-text-success);opacity:.8"></div>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div>
+        <div id="greedy-header" style="background:var(--color-background-warning);border:0.5px solid var(--color-border-warning);border-radius:var(--border-radius-md) var(--border-radius-md) 0 0;padding:10px 12px">
+          <div style="font-size:12px;font-weight:500;color:var(--color-text-warning)">Greedy</div>
+          <div id="greedy-summary" style="font-size:11px;color:var(--color-text-warning);opacity:.8;font-family:var(--font-mono)"></div>
+        </div>
+        <div id="greedy-list" style="border:0.5px solid var(--color-border-tertiary);border-top:none;border-radius:0 0 var(--border-radius-md) var(--border-radius-md);overflow:hidden"></div>
+      </div>
+      <div>
+        <div id="hc-header" style="background:var(--color-background-success);border:0.5px solid var(--color-border-success);border-radius:var(--border-radius-md) var(--border-radius-md) 0 0;padding:10px 12px">
+          <div style="display:flex;align-items:center;gap:5px">
+            <span style="font-size:12px;font-weight:500;color:var(--color-text-success)">Hill climbing</span>
+            <i class="ti ti-star" style="font-size:12px;color:var(--color-text-success)" aria-hidden="true"></i>
+          </div>
+          <div id="hc-summary" style="font-size:11px;color:var(--color-text-success);opacity:.8;font-family:var(--font-mono)"></div>
+        </div>
+        <div id="hc-list" style="border:0.5px solid var(--color-border-tertiary);border-top:none;border-radius:0 0 var(--border-radius-md) var(--border-radius-md);overflow:hidden"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SCORES TAB -->
+  <div id="tc-scores" style="display:none;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1.25rem">
+    <div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:12px">21 resources · sorted by boosted score · highlighted = selected by winning path</div>
+    <div style="border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);overflow:hidden">
+      <div class="scores-row" style="background:var(--color-background-secondary);border-bottom:0.5px solid var(--color-border-tertiary);font-size:10px;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.5px;font-weight:500">
+        <div>Resource</div><div style="text-align:center">Hrs</div><div style="text-align:center">Raw</div><div style="text-align:center">Boosted</div><div style="text-align:center">In</div>
+      </div>
+      <div id="scores-body"></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- #app -->
+
+<script>
+// ── Helpers ────────────────────────────────────────────────────────────────────
+const sBg = s => s>=8?'var(--color-background-success)':s>=6.5?'var(--color-background-warning)':'var(--color-background-danger)';
+const sC  = s => s>=8?'var(--color-text-success)':s>=6.5?'var(--color-text-warning)':'var(--color-text-danger)';
+const pill = s => `<span class="s-pill" style="background:${sBg(s)};color:${sC(s)}">${s.toFixed(1)}</span>`;
+
+function showView(name) {
+  ['input','scoring','results'].forEach(v => {
+    const el = document.getElementById(`v-${v}`);
+    if (el) el.style.display = v === name ? (v === 'input' ? 'block' : v === 'scoring' ? 'block' : 'block') : 'none';
+  });
+}
+
+function switchTab(name) {
+  ['path','algo','scores'].forEach(t => {
+    const c = document.getElementById(`tc-${t}`), b = document.getElementById(`tb-${t}`);
+    if (c) c.style.display = t === name ? 'block' : 'none';
+    if (b) {
+      b.style.background  = t === name ? 'var(--color-text-primary)' : 'transparent';
+      b.style.color       = t === name ? 'var(--color-background-primary)' : 'var(--color-text-secondary)';
+      b.style.fontWeight  = t === name ? '500' : '400';
+    }
+  });
+}
+
+let cacheOn = false;
+function setCacheBar(status) {
+  const bar  = document.getElementById('cache-bar');
+  const msg  = document.getElementById('cache-msg');
+  const btn  = document.getElementById('cache-btn');
+  const icon = document.getElementById('cache-icon');
+
+  if (status === 'cached') {
+    cacheOn = true;
+    bar.style.background  = 'var(--color-background-success)';
+    bar.style.borderColor = 'var(--color-border-success)';
+    msg.style.color       = 'var(--color-text-success)';
+    msg.textContent       = 'Cached scores — instant results';
+    icon.className        = 'ti ti-check';
+    icon.style.color      = 'var(--color-text-success)';
+    btn.textContent       = 'Re-score';
+  } else if (status === 'mismatch') {
+    cacheOn = false;
+    bar.style.background  = 'var(--color-background-warning)';
+    bar.style.borderColor = 'var(--color-border-warning)';
+    msg.style.color       = 'var(--color-text-warning)';
+    msg.textContent       = 'Objective changed — will re-score all 21 resources (~15s)';
+    icon.className        = 'ti ti-refresh';
+    icon.style.color      = 'var(--color-text-warning)';
+    btn.textContent       = 'Use cache';
+  } else {
+    cacheOn = false;
+    bar.style.background  = 'var(--color-background-warning)';
+    bar.style.borderColor = 'var(--color-border-warning)';
+    msg.style.color       = 'var(--color-text-warning)';
+    msg.textContent       = 'No cache — will score all 21 resources (~15s)';
+    icon.className        = 'ti ti-refresh';
+    icon.style.color      = 'var(--color-text-warning)';
+    btn.textContent       = 'Use cache';
+  }
+}
+
+function toggleCache() {
+  cacheOn = !cacheOn;
+  if (cacheOn) {
+    setCacheBar('cached');
+  } else {
+    const objective = document.getElementById('obj-input').value.trim();
+    fetchCacheStatus(objective, false);
+  }
+}
+
+let _cacheDebounce = null;
+function fetchCacheStatus(objective, applyToggle = true) {
+  clearTimeout(_cacheDebounce);
+  _cacheDebounce = setTimeout(async () => {
+    try {
+      const r = await fetch(`/api/cache-status?objective=${encodeURIComponent(objective)}`);
+      const d = await r.json();
+      if (d.cached && d.matches) {
+        setCacheBar('cached');
+      } else if (d.cached && !d.matches) {
+        setCacheBar('mismatch');
+      } else {
+        setCacheBar('none');
+      }
+    } catch {
+      setCacheBar('none');
+    }
+  }, 300);
+}
+
+// ── Scoring progress ──────────────────────────────────────────────────────────
+function appendScoringLine(data) {
+  const prog = document.getElementById('scoring-progress');
+  const scoreColor = data.score >= 8 ? 'var(--color-text-success)' : data.score >= 6.5 ? 'var(--color-text-warning)' : 'var(--color-text-danger)';
+  const line = document.createElement('div');
+  line.innerHTML = `<span style="color:var(--color-text-tertiary)">[${String(data.index).padStart(2,'0')}/${data.total}]</span> ${data.name} <span style="color:${scoreColor};margin-left:auto;padding-left:8px">→ ${data.score.toFixed(1)}/10</span>`;
+  line.style.cssText = 'display:flex;justify-content:space-between;gap:8px;padding:1px 0';
+  prog.appendChild(line);
+  prog.scrollTop = prog.scrollHeight;
+
+  const pct = Math.round((data.index / data.total) * 100);
+  document.getElementById('scoring-bar').style.width = pct + '%';
+  document.getElementById('scoring-pct').textContent = pct + '%';
+  document.getElementById('scoring-label').textContent = `Scored ${data.index} of ${data.total} resources`;
+}
+
+// ── Build results DOM ─────────────────────────────────────────────────────────
+function buildAll(data) {
+  const winner  = data.hc.total_utility >= data.greedy.total_utility ? data.hc : data.greedy;
+  const loser   = winner === data.hc ? data.greedy : data.hc;
+  const winName = winner.algorithm;
+
+  // Path tab stats
+  const utilPct = Math.round((winner.total_hours / data.budget) * 100);
+  document.getElementById('path-utility').textContent = winner.total_utility.toFixed(1);
+  document.getElementById('path-hours').innerHTML = `${winner.total_hours}h <span style="font-size:13px;color:var(--color-text-secondary);font-weight:400">/ ${data.budget}h</span>`;
+  document.getElementById('path-count').textContent = winner.resources.length;
+  document.getElementById('path-util-pct').textContent = utilPct + '%';
+  document.getElementById('path-util-bar').style.width = utilPct + '%';
+
+  // Path nodes
+  const pn = document.getElementById('path-nodes');
+  pn.innerHTML = '';
+  winner.resources.forEach((r, i) => {
+    const isLast = i === winner.resources.length - 1;
+    const tbg = `var(--color-background-${r.tc})`, ttc = `var(--color-text-${r.tc})`;
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;align-items:center;flex-shrink:0';
+    wrap.innerHTML = `<div class="path-node">
+      <div class="step-dot">${String(i+1).padStart(2,'0')}</div>
+      <div class="tag-pill" style="background:${tbg};color:${ttc}">${r.tag}</div>
+      <div style="font-size:13px;font-weight:500;color:var(--color-text-primary);line-height:1.3;margin-bottom:10px;min-height:32px">${r.name}</div>
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:11px;color:var(--color-text-secondary)"><i class="ti ti-clock" style="font-size:12px;vertical-align:-1px" aria-hidden="true"></i> ${r.hours}h</span>
+        ${pill(r.score)}
+      </div>
+    </div>${isLast ? '' : `<div class="connector"><div style="width:16px;height:1px;background:var(--color-border-secondary)"></div><i class="ti ti-chevron-right" style="font-size:14px;margin-left:-4px" aria-hidden="true"></i></div>`}`;
+    pn.appendChild(wrap);
+  });
+
+  // Winner card
+  const pctImprove = loser.total_utility > 0
+    ? ((winner.total_utility - loser.total_utility) / loser.total_utility * 100).toFixed(1)
+    : '—';
+  const delta = (winner.total_utility - loser.total_utility).toFixed(1);
+  const isTie = winner.total_utility === loser.total_utility;
+
+  document.getElementById('results-subtitle').textContent =
+    data.objective.slice(0, 30) + (data.objective.length > 30 ? '…' : '') + ` · ${data.budget}h budget`;
+  document.getElementById('winner-title').textContent = isTie ? 'Tie' : `${winName} wins`;
+  document.getElementById('winner-subtitle').textContent =
+    `${winner.resources.length} resources · ${winner.total_hours}h of ${data.budget}h · ${winner.total_utility.toFixed(1)} utility`;
+  document.getElementById('winner-pct').textContent = isTie ? '0%' : `+${pctImprove}%`;
+  document.getElementById('winner-vs').textContent = isTie ? 'equal utility' : `vs ${loser.algorithm.toLowerCase()}`;
+
+  // Algo tab
+  document.getElementById('greedy-summary').textContent = `${data.greedy.total_hours}h · ${data.greedy.total_utility.toFixed(1)} utility`;
+  document.getElementById('hc-summary').textContent     = `${data.hc.total_hours}h · ${data.hc.total_utility.toFixed(1)} utility`;
+  document.getElementById('algo-winner-title').textContent = isTie ? 'Tie' : `${winName} wins`;
+  document.getElementById('algo-winner-note').textContent  = isTie ? 'Both algorithms found the same solution' : 'Swap moves found a combination the other missed';
+  document.getElementById('algo-winner-pct').textContent   = isTie ? '0%' : `+${pctImprove}%`;
+  document.getElementById('algo-winner-delta').textContent = isTie ? '' : `+${delta} utility`;
+
+  const hcIds  = new Set(data.hc.resources.map(r => r.id));
+  const grIds  = new Set(data.greedy.resources.map(r => r.id));
+
+  [{el:'greedy-list', path:data.greedy.resources, otherIds:hcIds,  col:'warning'},
+   {el:'hc-list',     path:data.hc.resources,     otherIds:grIds,  col:'success'}
+  ].forEach(({el, path, otherIds, col}) => {
+    const container = document.getElementById(el);
+    container.innerHTML = '';
+    path.forEach((r, i) => {
+      const shared = otherIds.has(r.id);
+      const row = document.createElement('div');
+      row.className = 'algo-row';
+      row.style.cssText = `background:${shared ? 'var(--color-background-primary)' : `var(--color-background-${col})`};${i < path.length-1 ? 'border-bottom:0.5px solid var(--color-border-tertiary);' : ''}`;
+      row.innerHTML = `<div><div style="font-size:12px;font-weight:${shared?400:500};color:var(--color-text-primary)">${r.name}</div><div style="font-size:10px;color:var(--color-text-tertiary);font-family:var(--font-mono)">${r.hours}h</div></div>${pill(r.score)}`;
+      container.appendChild(row);
+    });
+  });
+
+  // Scores tab
+  const sb = document.getElementById('scores-body');
+  sb.innerHTML = '';
+  data.all.forEach((r, i) => {
+    const pct = Math.round((r.raw / 10) * 100);
+    const inLabel = [
+      r.inH ? `<span style="color:var(--color-text-success);font-size:10px;font-weight:500">HC</span>` : '',
+      r.inG ? `<span style="color:var(--color-text-warning);font-size:10px;font-weight:500">GR</span>` : '',
+    ].filter(Boolean).join(' ') || `<span style="color:var(--color-text-tertiary);font-size:10px">—</span>`;
+    const row = document.createElement('div');
+    row.className = 'scores-row';
+    row.style.cssText = `${r.inH ? 'background:var(--color-background-success);' : ''}${i < data.all.length-1 ? 'border-bottom:0.5px solid var(--color-border-tertiary);' : ''}`;
+    row.innerHTML = `<div style="font-size:12px;font-weight:${r.inH||r.inG?500:400};color:var(--color-text-primary)">${r.name}</div>
+      <div style="text-align:center;font-size:11px;color:var(--color-text-secondary);font-family:var(--font-mono)">${r.hours}</div>
+      <div style="padding:0 4px"><div style="height:4px;background:var(--color-border-tertiary);border-radius:2px;overflow:hidden;margin-bottom:2px"><div style="width:${pct}%;height:100%;background:${sC(r.raw)};border-radius:2px"></div></div><div style="font-size:10px;color:var(--color-text-secondary);font-family:var(--font-mono);text-align:center">${r.raw.toFixed(1)}</div></div>
+      <div style="text-align:center">${pill(r.boosted)}</div>
+      <div style="text-align:center">${inLabel}</div>`;
+    sb.appendChild(row);
+  });
+}
+
+// ── Main run ──────────────────────────────────────────────────────────────────
+function startRun() {
+  const objective = document.getElementById('obj-input').value.trim();
+  if (!objective) {
+    const err = document.getElementById('input-error');
+    err.textContent = 'Please enter a learning objective.';
+    err.style.display = 'block';
+    return;
+  }
+  document.getElementById('input-error').style.display = 'none';
+
+  const budget  = parseInt(document.getElementById('bslider').value);
+  const rescore = !cacheOn;
+
+  showView('scoring');
+  document.getElementById('scoring-progress').innerHTML = '';
+  document.getElementById('scoring-bar').style.width = '0%';
+  document.getElementById('scoring-pct').textContent = '0%';
+  document.getElementById('scoring-label').textContent = 'Starting…';
+
+  const url = `/api/run?objective=${encodeURIComponent(objective)}&budget=${budget}&rescore=${rescore}`;
+  const es = new EventSource(url);
+
+  es.onmessage = (e) => {
+    const data = JSON.parse(e.data);
+    if (data.type === 'scoring') {
+      appendScoringLine(data);
+    } else if (data.type === 'cached') {
+      document.getElementById('scoring-label').textContent = 'Using cached scores…';
+      document.getElementById('scoring-bar').style.width = '100%';
+      document.getElementById('scoring-pct').textContent = '100%';
+    } else if (data.type === 'result') {
+      es.close();
+      buildAll(data);
+      showView('results');
+      switchTab('path');
+    } else if (data.type === 'error') {
+      es.close();
+      const err = document.getElementById('input-error');
+      err.textContent = data.message || 'An error occurred.';
+      err.style.display = 'block';
+      showView('input');
+    }
+  };
+
+  es.onerror = () => {
+    es.close();
+    const err = document.getElementById('input-error');
+    err.textContent = 'Connection error. Check that the server is running and GROQ_API_KEY is set.';
+    err.style.display = 'block';
+    showView('input');
+  };
+}
+
+// ── Slider ────────────────────────────────────────────────────────────────────
+const sl = document.getElementById('bslider');
+const bv = document.getElementById('bval');
+const zm = document.getElementById('zone-msg');
+if (sl) sl.addEventListener('input', () => {
+  const v = parseInt(sl.value);
+  bv.textContent = v + 'h';
+  if (v < 10) {
+    zm.textContent = 'Too limited — may produce trivial paths';
+    zm.style.color = 'var(--color-text-danger)';
+  } else if (v > 35) {
+    zm.textContent = 'May cause dependency drag at this range';
+    zm.style.color = 'var(--color-text-warning)';
+  } else {
+    zm.textContent = 'Recommended range (10–35h)';
+    zm.style.color = 'var(--color-text-success)';
+  }
+});
+
+// ── Objective input → re-check cache ─────────────────────────────────────────
+const objInput = document.getElementById('obj-input');
+if (objInput) {
+  objInput.addEventListener('input', () => {
+    fetchCacheStatus(objInput.value.trim());
+  });
+}
+
+// ── Theme toggle ──────────────────────────────────────────────────────────────
+function applyTheme(dark) {
+  document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+  document.getElementById('theme-icon').className = dark ? 'ti ti-sun' : 'ti ti-moon';
+}
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  localStorage.setItem('alps-theme', isDark ? 'light' : 'dark');
+  applyTheme(!isDark);
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem('alps-theme');
+  const prefersDark = saved ? saved === 'dark' : window.matchMedia('(prefers-color-scheme: dark)').matches;
+  applyTheme(prefersDark);
+
+  showView('input');
+  switchTab('path');
+  fetchCacheStatus(document.getElementById('obj-input').value.trim());
+});
+</script>
+</body>
+</html>

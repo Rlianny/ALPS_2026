@@ -103,6 +103,24 @@ def score_all(goal: str, resources: list, pause: float = 0.5) -> dict:
     return utilities
 
 
+def score_all_yielding(goal: str, resources: list, pause: float = 0.5):
+    """
+    Generator version of score_all — yields a progress dict after each resource is scored.
+    Used by the web UI to stream live progress via SSE.
+    """
+    client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
+    for i, resource in enumerate(resources):
+        score = score_resource(client, goal, resource)
+        yield {
+            "index": i + 1,
+            "total": len(resources),
+            "id": resource["id"],
+            "name": resource["name"],
+            "score": score,
+        }
+        time.sleep(pause)
+
+
 def save_scores(utilities: dict, goal: str, path: str = "scores.json"):
     """Persist scores to disk to avoid re-scoring on every test run."""
     data = {"goal": goal, "utilities": utilities}
