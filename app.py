@@ -34,6 +34,7 @@ from solver import (
     build_index,
     greedy_solver,
     hill_climbing_solver,
+    exact_solver,
     load_resources,
     monte_carlo_analysis,
 )
@@ -90,9 +91,12 @@ def _serialize_path(result, raw_scores: dict) -> list[dict]:
 
 
 def _build_result_payload(budget: int, objective: str, utilities: dict,
-                          resources, result_greedy, result_hc) -> dict:
+                          resources, result_greedy, result_hc, result_exact) -> dict:
     hc_ids  = {r.id for r in result_hc.ordered_path}
     gr_ids  = {r.id for r in result_greedy.ordered_path}
+
+    opt = result_exact.total_utility
+    pct = lambda u: round(100.0 * u / opt, 1) if opt > 0 else None
 
     all_rows = []
     for r in sorted(resources, key=lambda x: -x.utility):
@@ -125,6 +129,14 @@ def _build_result_payload(budget: int, objective: str, utilities: dict,
             "iterations":    0,
             "restarts":      0,
             "resources":     _serialize_path(result_greedy, utilities),
+        },
+        "exact": {
+            "total_utility": round(result_exact.total_utility, 2),
+            "total_hours":   result_exact.total_hours,
+        },
+        "gap": {
+            "greedy": pct(result_greedy.total_utility),
+            "hc":     pct(result_hc.total_utility),
         },
         "all": all_rows,
     }
@@ -198,9 +210,10 @@ async def run(
 
         result_greedy = await asyncio.to_thread(greedy_solver, resources, budget)
         result_hc     = await asyncio.to_thread(hill_climbing_solver, resources, budget, **HC_CONFIG)
+        result_exact  = await asyncio.to_thread(exact_solver, resources, budget)
         mc            = await asyncio.to_thread(monte_carlo_analysis, resources, budget, 30)
 
-        payload = _build_result_payload(budget, objective, utilities, resources, result_greedy, result_hc)
+        payload = _build_result_payload(budget, objective, utilities, resources, result_greedy, result_hc, result_exact)
         payload["mc"] = {
             "n_runs":  mc.n_runs,
             "mean":    round(mc.mean, 2),
