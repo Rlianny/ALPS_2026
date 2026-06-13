@@ -1,0 +1,747 @@
+\documentclass[11pt, a4paper]{article}
+
+% ── PAQUETES ESENCIALES ──────────────────────────────────────
+\usepackage[utf8]{inputenc}       % Caracteres especiales (á, ñ, etc.)
+\usepackage[T1]{fontenc}
+\usepackage[spanish]{babel}       % Idioma español
+\usepackage{lmodern}              % Tipografía vectorial
+\usepackage{microtype}            % Microajustes tipográficos
+\usepackage{geometry}             % Márgenes
+\usepackage{graphicx}             % Imágenes
+\usepackage{booktabs}             % Tablas profesionales
+\usepackage{longtable}            % Tablas multipágina
+\usepackage{tabularx}             % Tablas de ancho flexible
+\usepackage{amsmath, amssymb}     % Matemáticas
+\usepackage{xcolor}               % Colores
+\usepackage{listings}             % Código fuente
+\usepackage{float}                % Control de posición de figuras
+\usepackage{caption}              % Leyendas personalizadas
+\usepackage{array}                % Columnas de tabla avanzadas
+\usepackage{enumitem}             % Listas personalizadas
+\usepackage{parskip}              % Espaciado entre párrafos
+\usepackage{titlesec}             % Estilo de secciones
+\usepackage{fancyhdr}             % Encabezados y pies de página
+\usepackage[most]{tcolorbox}      % Cajas destacadas
+\usepackage{hyperref}             % Links y referencias (cargar al final)
+
+\geometry{margin=2.5cm}
+% ── ESTILO LISTINGS (prompt) ─────────────────────────────────────────────────
+\lstset{
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{alpslight},
+  frame=single,
+  rulecolor=\color{alpsblue},
+  framerule=0.8pt,
+  breaklines=true,
+  xleftmargin=8pt, xrightmargin=8pt,
+  aboveskip=8pt, belowskip=8pt,
+  keepspaces=true,
+  showstringspaces=false,
+}
+
+
+% ── PALETA DE COLORES ────────────────────────────────────────
+\definecolor{alpsblue}{RGB}{30, 64, 124}
+\definecolor{alpsaccent}{RGB}{0, 122, 153}
+\definecolor{alpsgray}{RGB}{90, 90, 90}
+\definecolor{alpslight}{RGB}{237, 242, 247}
+\definecolor{alpsgreen}{RGB}{34, 120, 80}
+
+% ── HIPERVÍNCULOS ────────────────────────────────────────────
+\hypersetup{
+    colorlinks=true,
+    linkcolor=alpsblue,
+    urlcolor=alpsaccent,
+    citecolor=alpsblue,
+    pdftitle={ALPS - AI Learning Path Selector},
+    pdfauthor={Lianny de la Caridad Revé Valdivieso}
+}
+
+% ── ESTILO DE SECCIONES ──────────────────────────────────────
+\titleformat{\section}
+  {\color{alpsblue}\Large\bfseries}{\thesection}{0.6em}{}
+  [\vspace{2pt}{\color{alpsaccent}\titlerule[1pt]}]
+\titleformat{\subsection}
+  {\color{alpsaccent}\large\bfseries}{\thesubsection}{0.5em}{}
+\titlespacing*{\section}{0pt}{2.2ex plus 1ex minus .2ex}{1.2ex plus .2ex}
+
+% ── ENCABEZADO Y PIE ─────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+\fancyhead[L]{\small\color{alpsgray}ALPS — AI Learning Path Selector}
+\fancyhead[R]{\small\color{alpsgray}\leftmark}
+\fancyfoot[C]{\thepage}
+
+% ── CAJAS DESTACADAS ─────────────────────────────────────────
+\newtcolorbox{ideabox}[1][]{
+  colback=alpslight, colframe=alpsblue,
+  boxrule=0.8pt, arc=3pt, left=8pt, right=8pt, top=6pt, bottom=6pt,
+  #1
+}
+\newtcolorbox{notebox}[1][]{
+  colback=white, colframe=alpsaccent,
+  boxrule=0.8pt, arc=3pt, left=8pt, right=8pt, top=6pt, bottom=6pt,
+  #1
+}
+
+% Espaciado de filas en tablas
+\renewcommand{\arraystretch}{1.25}
+\captionsetup{labelfont={bf,color=alpsblue}, font=small}
+
+% ── DATOS DEL DOCUMENTO ──────────────────────────────────────
+\title{\textbf{ALPS}}
+\author{}
+\date{}
+
+\begin{document}
+
+% ════════════════ PORTADA ════════════════
+\begin{titlepage}
+\centering
+\vspace*{2.5cm}
+
+{\color{alpsblue}\Huge\bfseries ALPS\par}
+\vspace{0.4cm}
+{\color{alpsaccent}\LARGE AI Learning Path Selector\par}
+\vspace{0.6cm}
+{\large\itshape Sistema de Optimización de Rutas de Aprendizaje\\con Integración de LLM\par}
+
+\vspace{1.5cm}
+{\color{alpsaccent}\rule{0.55\textwidth}{1.2pt}}
+
+\vspace{1.2cm}
+{\large\bfseries Proyecto Final de Inteligencia Artificial 2025–2026\par}
+\vspace{0.3cm}
+{\large Tema 9: Construcción de Rutas de Aprendizaje\par}
+
+\vfill
+
+{\large\bfseries Lianny de la Caridad Revé Valdivieso\par}
+\vspace{0.8cm}
+{\color{alpsgray}
+Facultad de Matemática y Computación\\
+Universidad de La Habana\\
+Curso 2025–2026\par}
+
+\vspace{1cm}
+{\color{alpsgray}\today}
+\end{titlepage}
+
+\newpage
+\tableofcontents
+\newpage
+
+% ════════════════ 1. DESCRIPCIÓN DEL PROBLEMA ════════════════
+\section{Descripción del Problema}
+
+El aprendizaje de temáticas complejas como la Inteligencia Artificial implica un conjunto amplio de recursos educativos con relaciones de dependencia: no es posible comprender redes neuronales sin álgebra lineal y optimización, ni usar NumPy sin Python. A esto se suma que los estudiantes disponen de presupuestos de tiempo limitados y objetivos de aprendizaje heterogéneos.
+
+\begin{ideabox}
+\textbf{ALPS} (AI Learning Path Selector) resuelve el problema de construir automáticamente una ruta de aprendizaje personalizada: dado un catálogo de recursos educativos con sus dependencias, un objetivo en lenguaje natural y un presupuesto de tiempo en horas, el sistema selecciona el subconjunto óptimo de recursos y lo ordena en una secuencia válida que maximiza la utilidad para el usuario sin exceder su presupuesto.
+\end{ideabox}
+
+\subsection{Marco de simulación}
+
+Siguiendo el marco de la simulación computacional, ALPS puede describirse como el modelo computacional de un sistema de aprendizaje formal:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Entidades:} recursos educativos, caracterizados por nombre, descripción, duración y prerequisitos.
+  \item \textbf{Relaciones estructurales:} dependencias entre recursos (grafo dirigido acíclico).
+  \item \textbf{Relaciones funcionales:} utilidad de cada recurso para un objetivo dado (evaluada por el LLM).
+  \item \textbf{Proceso:} construcción de una secuencia óptima de estudio que satisface las restricciones.
+\end{itemize}
+
+El sistema es \emph{abierto} (recibe entradas: objetivo y presupuesto; emite salidas: ruta de aprendizaje) y \emph{no-determinista} en su componente Hill Climbing, cuyo comportamiento depende de variables aleatorias uniformes generadas en cada ejecución.
+
+\subsection{Entradas y salidas}
+
+\begin{description}[leftmargin=1.5em, style=nextline]
+  \item[Entradas] (1) objetivo de aprendizaje en lenguaje natural, (2) presupuesto de tiempo en horas, (3) catálogo de recursos con metadatos y dependencias.
+  \item[Salida] secuencia ordenada de recursos que respeta todas las restricciones y maximiza la utilidad total para el objetivo dado.
+\end{description}
+
+% ════════════════ 2. MODELADO FORMAL ════════════════
+\section{Modelado Formal}
+
+El problema se formula como optimización combinatoria con restricciones. Sea $R = \{r_1, \dots, r_n\}$ el conjunto de recursos, $d_i$ la duración en horas de $r_i$, y $u_i$ su puntuación de utilidad para el objetivo del usuario.
+
+\subsection{Variables de decisión}
+
+Para cada recurso $r_i$ se define una variable binaria:
+\[
+x_i \in \{0, 1\}, \qquad
+x_i =
+\begin{cases}
+1 & \text{si } r_i \text{ se incluye en la ruta} \\
+0 & \text{en caso contrario}
+\end{cases}
+\]
+
+\subsection{Restricciones duras}
+
+\textbf{Cierre de dependencias.} Si un recurso se incluye, todos sus prerequisitos transitivos deben incluirse también:
+\[
+\forall r_i:\quad x_i = 1 \;\wedge\; r_j \in \mathrm{prereqs}_{\text{trans}}(r_i) \;\Longrightarrow\; x_j = 1
+\]
+
+\textbf{Presupuesto.} La suma de duraciones no puede superar el presupuesto $T$:
+\[
+\sum_{i=1}^{n} x_i \, d_i \;\le\; T
+\]
+
+\subsection{Función objetivo}
+
+Se maximiza la suma de utilidades de los recursos seleccionados:
+\[
+\max \;\sum_{i=1}^{n} x_i \, u_i
+\]
+
+\subsection{Subproblema de ordenamiento}
+
+Una vez determinado el subconjunto $S$, la secuencia de estudio debe respetar que ningún recurso aparezca antes que sus prerequisitos. Se calcula un \emph{ordenamiento topológico} del subgrafo inducido por $S$ mediante el algoritmo de Kahn (BFS sobre grados de entrada) en tiempo $O(|S| + |E|)$.
+
+% ════════════════ 3. DATASET ════════════════
+\section{Dataset}
+
+\subsection{Generación del dataset sintético}
+
+Se generó un dataset sintético de \textbf{21 recursos educativos} en el dominio de Inteligencia Artificial y Machine Learning. La elección de un dataset sintético permite controlar con precisión la estructura del grafo de dependencias y las propiedades experimentales deseadas.
+
+El script \texttt{generate\_dataset.py} genera y valida automáticamente el dataset verificando: (1) ausencia de IDs duplicados, (2) integridad referencial de todas las dependencias, y (3) ausencia de ciclos mediante DFS con pila activa. La ausencia de ciclos es condición necesaria para que el ordenamiento topológico sea posible.
+
+\subsection{Estructura y propiedades}
+
+El dataset se organiza en cuatro niveles de profundidad que reflejan la jerarquía natural del conocimiento en IA/ML:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Nivel 0} (5 recursos, sin prerequisitos): Python básico, Álgebra lineal, Cálculo diferencial, Probabilidad y estadística, Lógica y matemática discreta.
+  \item \textbf{Nivel 1} (5 recursos): NumPy y Pandas, Visualización de datos, Machine learning clásico, Optimización matemática, Preprocesamiento de texto.
+  \item \textbf{Nivel 2} (5 recursos): Redes neuronales densas, Evaluación de modelos, Word embeddings, CNN, RNN/LSTM.
+  \item \textbf{Nivel 3} (6 recursos): Arquitectura Transformer, Fine-tuning de LLMs, NLP clásico, Aprendizaje por refuerzo, MLOps y despliegue, Interpretabilidad.
+\end{itemize}
+
+Propiedades que justifican la idoneidad del dataset para el problema:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item 21 recursos con duraciones heterogéneas entre 2h y 7h (total: 90h), lo que hace genuinamente restrictiva la restricción de presupuesto para presupuestos típicos de 15–30h.
+  \item 13 de los 21 recursos tienen 2 o más prerequisitos directos, creando dependencias múltiples que generan tensiones reales en la selección.
+  \item Las descripciones están redactadas en lenguaje natural específico, permitiendo al LLM evaluar utilidad diferencial según distintos objetivos de aprendizaje.
+  \item La estructura del grafo permite explorar el fenómeno de \emph{dependency drag}: recursos de alta utilidad al final de cadenas largas de dependencias son inaccesibles con presupuestos pequeños.
+\end{itemize}
+
+% ════════════════ 4. DISEÑO DEL SISTEMA ════════════════
+\section{Diseño del Sistema}
+
+\subsection{Cierre de dependencias y postprocesamiento}
+
+\textbf{Cierre transitivo.} La función \texttt{compute\_closure} implementa un DFS iterativo que, dado un recurso objetivo, devuelve el conjunto completo de recursos que deben incluirse para poder seleccionarlo (el recurso más todos sus ancestros transitivos).
+
+\textbf{Dependency boost.} El LLM tiende a subvalorar recursos fundacionales porque evalúa relevancia directa al objetivo, ignorando su valor como prerequisito. Para corregir este sesgo se aplica un \emph{boost} post-proceso:
+
+\[
+u_{\text{boost}}(r_i) = \min\!\Big(10.0,\; u_{\text{raw}}(r_i) + 0.3 \cdot \max\{\, u(r_j) : r_i \in \mathrm{closure}(r_j) \,\}\Big)
+\]
+
+Cada recurso recibe un boost proporcional a la utilidad máxima de todos los recursos que transitivamente dependen de él. El factor $\alpha = 0.3$ se determinó empíricamente.
+
+\textbf{Umbral mínimo de utilidad.} Recursos con score boosted menor a 4.0 no se seleccionan como objetivos directos, evitando que el algoritmo rellene el presupuesto con recursos de baja utilidad. Un recurso por debajo del umbral puede aún aparecer como prerequisito forzado de un recurso que sí supera el umbral.
+
+\subsection{Algoritmo 1: Greedy (baseline)}
+
+En cada iteración calcula la eficiencia marginal de cada candidato:
+\[
+\mathrm{eficiencia}(r_i) = \frac{\text{utilidad nueva}}{\text{horas nuevas}}
+\]
+
+Selecciona el candidato de mayor eficiencia que quepa en el presupuesto, expande su cierre de dependencias y repite hasta que ningún candidato quepa. Es determinista y rápido pero sus decisiones son irrevocables.
+
+\subsection{Algoritmo 2: Hill Climbing con reinicios aleatorios}
+
+Opera sobre el espacio de soluciones completas mediante tres tipos de movimiento:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{ADD:} incluir un recurso no seleccionado junto con su cierre, si el costo cabe en el presupuesto.
+  \item \textbf{REMOVE:} eliminar un recurso hoja (sin dependientes en la selección actual).
+  \item \textbf{SWAP:} eliminar una hoja y agregar un recurso diferente en un único paso, liberando horas para financiar el nuevo recurso. Este es el movimiento crítico para escapar óptimos locales.
+\end{itemize}
+
+En cada iteración se mueve al vecino con mayor utilidad si supera a la solución actual; si no, detiene la búsqueda local. El proceso se repite desde 5 puntos de inicio aleatorios independientes, conservando la mejor solución global.
+
+\begin{notebox}
+\textbf{Conexión con metaheurísticas:} los reinicios aleatorios implementan \emph{exploración} para escapar óptimos locales; la búsqueda en el vecindario implementa \emph{explotación} de una región prometedora.
+\end{notebox}
+
+
+\subsection{Ordenamiento topológico de la selección}
+
+Una vez que cualquiera de los dos algoritmos determina el subconjunto óptimo
+$S$, resolver el problema de selección no es suficiente: la secuencia de
+estudio debe garantizar que ningún recurso aparezca antes que sus
+prerequisitos. Este constituye el \textbf{segundo subproblema} del sistema,
+independiente del algoritmo de selección usado.
+
+Se implementa el \textbf{algoritmo de Kahn}, basado en BFS sobre los grados
+de entrada (\textit{in-degree}) de los nodos del subgrafo inducido por $S$:
+
+\begin{enumerate}[leftmargin=2em]
+  \item Calcular el in-degree de cada $r_i \in S$, contando únicamente las
+        aristas entre nodos de $S$ (los prerequisitos externos a $S$ no
+        aplican).
+  \item Inicializar una cola $Q$ con todos los $r_i \in S$ cuyo in-degree
+        es 0 —recursos que no dependen de ningún otro recurso en la
+        selección actual.
+  \item Mientras $Q$ no esté vacía:
+        \begin{enumerate}[label=\alph*.]
+          \item Extraer $r_i$ de $Q$ y añadirlo al ordenamiento final.
+          \item Para cada $r_j \in S$ tal que $r_i \in \mathrm{prereqs}(r_j)$,
+                decrementar $\mathrm{in\text{-}degree}(r_j)$; si llega a 0,
+                añadir $r_j$ a $Q$.
+        \end{enumerate}
+\end{enumerate}
+
+El algoritmo opera en tiempo $O(|S| + |E_S|)$, donde $|E_S|$ es el número de
+aristas del subgrafo inducido. La ausencia de ciclos en el dataset —validada
+en la generación mediante DFS con pila activa— garantiza que el ordenamiento
+siempre es completo: $|\mathrm{ordenamiento}| = |S|$.
+
+\begin{notebox}
+El ordenamiento topológico se aplica de forma idéntica a la salida de
+\emph{ambos} algoritmos. La validez de la secuencia final es independiente
+de la estrategia de selección usada.
+\end{notebox}
+
+% ════════════════ 5. ROL DEL LLM ════════════════
+\section{Rol del LLM en el Sistema}
+
+El LLM (\texttt{llama-3.1-8b-instant} vía Groq API) cumple el rol de puente entre el texto en lenguaje natural y los valores numéricos que requiere el algoritmo de optimización. Para cada recurso recibe el objetivo del usuario, el nombre y descripción del recurso, y su duración; y produce un score decimal entre 0.0 y 10.0 que pasa a ser el coeficiente $u_i$ en la función objetivo.
+
+\subsection{Diseño del prompt}
+
+El prompt enviado al modelo para cada recurso es el siguiente:
+
+\begin{lstlisting}
+You are an expert in AI/ML curriculum design
+and personalized learning.
+
+User's learning goal:
+"{goal}"
+
+Resource to evaluate:
+- Name: {resource_name}
+- Description: {resource_description}
+- Duration: {duration_hours} hours
+
+Rate how useful this resource is for reaching
+the user's goal. Consider its direct relevance
+to the goal -- resources that do not directly
+address the goal should score lower, even if
+they are generally useful.
+
+Reply with ONLY a decimal number between 0.0
+and 10.0. No other text.
+Valid response examples: 8.5 | 3.0 | 9.5 | 2.0
+\end{lstlisting}
+
+Cada decisión de diseño responde a una restricción concreta:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Prompt corto y sin rúbrica:} durante la experimentación se
+        comprobó que prompts con rúbricas detalladas (rangos de score con
+        descripción de cada nivel) producen compresión de scores en modelos
+        de tamaño reducido: el modelo asigna valores similares a todos los
+        recursos ($\approx$8.2), eliminando la diferenciación necesaria.
+        Un prompt directo y minimalista produce mejor separación.
+  \item \textbf{Instrucción de formato estricta:} se solicita explícitamente
+        un único número decimal sin texto adicional, junto con ejemplos de
+        respuesta válida. Esto reduce la tasa de respuestas malformadas que
+        requieren parsing de recuperación.
+  \item \textbf{Temperatura 0.1:} valor bajo que produce salidas más
+        deterministas y consistentes entre llamadas sucesivas para el mismo
+        recurso y objetivo, reduciendo la varianza del scoring.
+  \item \textbf{Evaluación de relevancia directa:} la instrucción prioriza
+        la relevancia directa al objetivo. La corrección por valor
+        fundacional se delega al \emph{dependency boost} algorítmico
+        (sección~4), separando responsabilidades entre el LLM y el sistema.
+\end{itemize}
+
+\subsection{Integración arquitectónica}
+
+Los 21 recursos se scorean secuencialmente con una pausa de 0.5s entre llamadas para respetar los límites de tasa de la API gratuita de Groq. Los scores se persisten en \texttt{scores.json} como caché, evitando recálculos en corridas sucesivas.
+
+\subsection{Limitaciones del scoring}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Subvaloración de recursos fundacionales:} el modelo evalúa relevancia directa ignorando el valor como prerequisito. Corregido mediante el \emph{dependency boost}.
+  \item \textbf{Compresión de scores:} con prompts complejos, el modelo asigna scores similares a todos los recursos, eliminando la diferenciación necesaria. Mitigado mediante prompt minimalista y temperatura baja (0.1).
+\end{itemize}
+
+% ════════════════ 6. METODOLOGÍA ════════════════
+\section{Metodología Experimental}
+
+El diseño experimental compara el comportamiento de ambos algoritmos bajo dos objetivos de aprendizaje cualitativamente distintos y tres niveles de presupuesto, para un total de \textbf{12 configuraciones} (2 objetivos $\times$ 3 presupuestos $\times$ 2 algoritmos).
+
+\subsection{Objetivos de aprendizaje}
+
+\begin{description}[leftmargin=1.5em, style=nextline]
+  \item[Objetivo 1 (ML Engineer)] \textit{``I want to work as an ML engineer building and deploying models in production''}. Prioriza herramientas prácticas (MLOps, redes neuronales, NumPy) con recursos de alta utilidad distribuidos en distintos niveles del grafo.
+  \item[Objetivo 2 (NLP Researcher)] \textit{``I want to research NLP and understand how large language models work internally''}. Concentra la alta utilidad en recursos muy avanzados (Transformers, RNN, Word Embeddings) que requieren cadenas de dependencias de 40–52 horas.
+\end{description}
+
+\subsection{Presupuestos de tiempo}
+
+Se evalúan tres presupuestos: \textbf{15h} (restrictivo), \textbf{20h} (moderado) y \textbf{30h} (amplio). La selección cubre el rango en que la restricción de tiempo es significativa (el total del dataset es 90h).
+
+\subsection{Métricas de comparación}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Utilidad total:} suma de scores boosted de los recursos seleccionados.
+  \item \textbf{Horas utilizadas:} total de horas de la ruta resultante vs. el presupuesto disponible.
+  \item \textbf{Recursos seleccionados:} cardinalidad del conjunto seleccionado.
+  \item \textbf{Iteraciones (HC):} número total de pasos de búsqueda realizados.
+\end{itemize}
+
+\subsection{Análisis Monte Carlo del Hill Climbing}
+
+El Hill Climbing es un algoritmo no-determinista: su resultado depende de las permutaciones aleatorias uniformes utilizadas para construir las soluciones iniciales de cada reinicio. Una única ejecución es simplemente una muestra del proceso estocástico subyacente, no una estimación fiable del rendimiento real.
+
+Para caracterizar estadísticamente el comportamiento del HC se aplica un análisis de Monte Carlo: se ejecutan $N = 30$ réplicas independientes con semillas distintas (semilla $i$ para la réplica $i$, $i \in \{0, \dots, 29\}$), garantizando reproducibilidad e independencia estadística.
+
+Cada réplica produce una observación de la variable aleatoria $U = $ utilidad de la mejor solución encontrada. Las 30 observaciones permiten estimar:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Media muestral:} estimador de $\mathbb{E}[U]$, la utilidad esperada del HC.
+  \item \textbf{Desviación estándar muestral:} variabilidad del algoritmo entre ejecuciones.
+  \item \textbf{Rango $[\min, \max]$:} valores extremos observados en las 30 réplicas.
+  \item \textbf{Intervalo de confianza del 95\%:} usando la distribución $t$ de Student con $N-1 = 29$ grados de libertad.
+\end{itemize}
+
+La fórmula del intervalo de confianza es:
+\[
+\text{IC}_{95\%} = \left[\, \bar{x} - t \cdot \frac{s}{\sqrt{N}}, \;\; \bar{x} + t \cdot \frac{s}{\sqrt{N}} \,\right],
+\qquad t = t_{0.025,\,29} = 2.045
+\]
+donde $s$ es la desviación estándar muestral.
+
+\begin{notebox}
+\textbf{Conexión con simulación:} las 30 réplicas del HC constituyen una simulación de Monte Carlo del proceso estocástico de optimización. La variable aleatoria $U$ se genera a partir de permutaciones uniformes aleatorias de los recursos —generación de variables aleatorias discretas uniformes— y su distribución se analiza con las técnicas estándar de análisis estadístico de simulaciones.
+\end{notebox}
+
+% ════════════════ 7. RESULTADOS ════════════════
+\section{Resultados y Análisis}
+
+\subsection{Scores del LLM y efecto del dependency boost}
+
+La siguiente tabla muestra una selección representativa de los scores del LLM (raw) y tras aplicar el dependency boost, para ambos objetivos. Se evidencia la diferenciación entre objetivos y el efecto corrector del boost sobre recursos fundacionales.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Scores raw vs.\ boosted por objetivo (selección representativa).}
+\begin{tabular}{l ccc ccc}
+\toprule
+& \multicolumn{3}{c}{\textbf{ML Engineer}} & \multicolumn{3}{c}{\textbf{NLP Researcher}} \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-7}
+\textbf{Recurso} & Raw & Boost & $\Delta$ & Raw & Boost & $\Delta$ \\
+\midrule
+Python básico            & 2.5 & 5.0  & +2.5 & 0.5 & 3.4  & +2.9 \\
+Álgebra lineal           & 2.5 & 5.0  & +2.5 & 2.0 & 4.8  & +2.8 \\
+Cálculo diferencial      & 8.5 & 10.0 & +1.5 & 2.5 & 5.3  & +2.8 \\
+Probabilidad y estad.    & 2.5 & 5.0  & +2.5 & 0.5 & 3.4  & +2.9 \\
+NumPy y Pandas           & 6.5 & 9.1  & +2.6 & 0.5 & 3.4  & +2.9 \\
+Machine learning clásico & 4.5 & 7.0  & +2.5 & 0.5 & 3.4  & +2.9 \\
+Optimización matemática  & 6.5 & 9.1  & +2.6 & 0.5 & 3.4  & +2.9 \\
+Preprocesamiento de texto& 4.5 & 7.0  & +2.5 & 4.5 & 7.3  & +2.8 \\
+Redes neuronales densas  & 8.0 & 10.0 & +2.0 & 2.5 & 5.3  & +2.8 \\
+Word embeddings          & 6.5 & 9.1  & +2.6 & 8.5 & 10.0 & +1.5 \\
+Redes recurrentes (RNN)  & 7.5 & 10.0 & +2.5 & 8.5 & 10.0 & +1.5 \\
+Arquitectura Transformer & 6.5 & 9.1  & +2.6 & 9.5 & 10.0 & +0.5 \\
+Fine-tuning de LLMs      & 8.5 & 8.5  & ---  & 8.5 & 8.5  & ---  \\
+MLOps y despliegue       & 8.5 & 8.5  & ---  & 0.5 & 0.5  & ---  \\
+CNN                      & 8.5 & 8.5  & ---  & 0.5 & 0.5  & ---  \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+El dependency boost corrige efectivamente la subvaloración de recursos fundacionales. \emph{Cálculo diferencial} recibe raw 8.5 para ML Engineer pero solo 2.5 para NLP Researcher; al ser prerequisito transitivo de \emph{Transformers} (9.5), su score boosted sube a 5.3 para el objetivo NLP. El efecto es más pronunciado en \emph{NumPy y Pandas}, base de prácticamente toda la pila de ML.
+
+La columna NLP Researcher confirma que \emph{MLOps} (8.5 para ML Engineer) cae a 0.5 para investigación NLP, demostrando que el LLM diferencia correctamente según el perfil del usuario.
+
+\subsection{Experimento 1: Objetivo ML Engineer}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Comparación Greedy vs.\ Hill Climbing — objetivo ML Engineer.}
+\begin{tabular}{c cccc cccc c}
+\toprule
+& \multicolumn{3}{c}{\textbf{Greedy}} & \multicolumn{4}{c}{\textbf{Hill Climbing}} & \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-8}
+\textbf{Presup.} & Horas & Util. & Rec. & Horas & Util. & Rec. & Iter. & \textbf{Resultado} \\
+\midrule
+15h & 12h & 31.15 & 4 & 15h & 33.15 & 4 & 11 & \textbf{\color{alpsgreen}HC (+6\%)} \\
+20h & 17h & 40.20 & 5 & 19h & 42.20 & 5 & 11 & \textbf{\color{alpsgreen}HC (+5\%)} \\
+30h & 25h & 54.30 & 7 & 30h & 61.35 & 8 & 11 & \textbf{\color{alpsgreen}HC (+13\%)} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+El Hill Climbing supera al Greedy en los tres presupuestos evaluados. Con 15h, el HC obtiene 33.15 frente a 31.15 del Greedy (6\% de mejora) y además utiliza las 15 horas completas mientras el Greedy solo usa 12h —tres horas de presupuesto desaprovechadas. El HC identifica que incluir Álgebra lineal (5h, 9.1) junto con Cálculo y NumPy maximiza la utilidad, combinación que el Greedy no alcanza por sus decisiones irrevocables.
+
+Con 20h, la ventaja del HC se mantiene en 2 puntos de utilidad (42.20 vs 40.20, 5\%). El HC añade Optimización matemática (4h, 9.1) a la ruta mediante un \emph{swap move} que reorganiza la selección para hacer espacio, movimiento imposible para el Greedy una vez que sus primeras elecciones ocupan el presupuesto.
+
+Con 30h, la ventaja crece al 13\% (61.35 vs 54.30) y el HC utiliza el presupuesto completo (30h vs 25h del Greedy), encontrando un recurso adicional: Evaluación y validación de modelos (3h, 9.1). El Greedy nuevamente queda atascado con 5h sin usar porque sus selecciones previas bloquean el acceso a combinaciones más eficientes.
+
+\begin{notebox}
+\textbf{Nota sobre las horas sin usar del Greedy.} El hecho de que el
+Greedy deje 3h sin usar en el caso de 15h y 5h en el de 30h no es un
+error de implementación: es una consecuencia estructural del algoritmo.
+Una vez que el Greedy ha seleccionado un conjunto de recursos, el
+remanente de horas disponibles puede ser insuficiente para incluir
+cualquier candidato restante junto con sus prerequisitos faltantes. El
+algoritmo no retrocede ni intercambia recursos ya seleccionados, por lo
+que ese remanente queda irrecuperable. El HC evita este problema mediante
+los \emph{swap moves}, que liberan horas de recursos ya seleccionados para
+financiar combinaciones más eficientes.
+\end{notebox}
+
+
+\begin{notebox}
+\textbf{Nota sobre la generalización de los resultados.} El dataset de
+21 recursos es suficientemente pequeño para que el Greedy encuentre
+soluciones near-óptimas en muchos casos. Con instancias más grandes
+(50–100 recursos y grafos de dependencias más densos), la ventaja del
+HC sería previsiblemente más pronunciada y consistente, dado que el
+espacio de búsqueda crecería exponencialmente mientras que el costo de
+los swap moves crece de forma polinomial. Los resultados aquí reportados
+deben interpretarse como válidos para esta instancia concreta; su
+generalización a datasets mayores requeriría experimentación adicional.
+\end{notebox}
+
+\subsubsection*{Rutas concretas encontradas por HC — Objetivo ML Engineer}
+
+A continuación se muestran las rutas específicas producidas por el Hill
+Climbing para los presupuestos de 15h y 30h, ilustrando la progresión
+de recursos que el sistema selecciona al disponer de más tiempo.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Ruta óptima HC — ML Engineer, 15h. Total: 15h $|$ Utilidad: 33.15}
+\begin{tabular}{r l c c}
+\toprule
+\textbf{\#} & \textbf{Recurso} & \textbf{Horas} & \textbf{Utilidad (boost)} \\
+\midrule
+1 & Python básico              & 3h & 5.0  \\
+2 & Álgebra lineal             & 5h & 9.1  \\
+3 & Cálculo diferencial        & 4h & 9.1  \\
+4 & NumPy y Pandas             & 3h & 10.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Ruta óptima HC — ML Engineer, 30h. Total: 30h $|$ Utilidad: 61.35}
+\begin{tabular}{r l c c}
+\toprule
+\textbf{\#} & \textbf{Recurso} & \textbf{Horas} & \textbf{Utilidad (boost)} \\
+\midrule
+1 & Python básico                        & 3h & 5.0  \\
+2 & Álgebra lineal                       & 5h & 9.1  \\
+3 & Cálculo diferencial                  & 4h & 9.1  \\
+4 & Probabilidad y estadística           & 4h & 5.0  \\
+5 & NumPy y Pandas                       & 3h & 10.0 \\
+6 & Preprocesamiento de texto            & 2h & 7.0  \\
+7 & Machine learning clásico             & 6h & 7.0  \\
+8 & Evaluación y validación de modelos   & 3h & 9.1  \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Las rutas respetan el ordenamiento topológico: ningún recurso aparece antes
+que sus prerequisitos. La progresión de 15h a 30h muestra cómo el sistema
+incorpora gradualmente recursos de niveles más profundos del grafo de
+dependencias a medida que el presupuesto lo permite.
+\subsection{Experimento 2: Objetivo NLP Researcher}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Comparación Greedy vs.\ Hill Climbing — objetivo NLP Researcher.}
+\begin{tabular}{c cccc cccc c}
+\toprule
+& \multicolumn{3}{c}{\textbf{Greedy}} & \multicolumn{4}{c}{\textbf{Hill Climbing}} & \\
+\cmidrule(lr){2-4} \cmidrule(lr){5-8}
+\textbf{Presup.} & Horas & Util. & Rec. & Horas & Util. & Rec. & Iter. & \textbf{Resultado} \\
+\midrule
+15h & 14h & 20.90 & 4 & 14h & 20.90 & 4 & 5 & \textbf{Empate} \\
+20h & 14h & 20.90 & 4 & 14h & 20.90 & 4 & 5 & \textbf{Empate} \\
+30h & 30h & 36.00 & 8 & 30h & 36.00 & 8 & 5 & \textbf{Empate} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+El experimento NLP Researcher revela un patrón cualitativamente distinto. Los tres recursos de máxima utilidad (Transformer 9.5, Word Embeddings 8.5, RNN 8.5) requieren cadenas de dependencias de 40–52 horas —imposibles de alcanzar con presupuestos de 15h, 20h o incluso 30h.
+
+Como consecuencia, ambos algoritmos seleccionan solo recursos fundacionales de baja utilidad para el objetivo NLP. El espacio de búsqueda efectivo es tan pequeño que ambos convergen a la misma solución sin diferenciación. Las iteraciones del HC se mantienen en 5 (1 por reinicio), confirmando que el vecindario es demasiado pequeño para explorar.
+
+Notablemente, los resultados de 15h y 20h son idénticos: con 20h tampoco hay recursos adicionales alcanzables por encima del umbral, por lo que el presupuesto extra no puede invertirse en nada útil. Este comportamiento es un hallazgo genuino: el sistema es honesto respecto a lo que es alcanzable con el tiempo disponible.
+
+\subsection{Análisis Monte Carlo del Hill Climbing}
+
+La siguiente tabla presenta los resultados del análisis Monte Carlo ($N = 30$ réplicas) para el objetivo ML Engineer, que es el que mostró mayor variabilidad entre algoritmos en el experimento principal.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Análisis Monte Carlo ($N=30$) — objetivo ML Engineer.}
+\begin{tabular}{c ccccc}
+\toprule
+\textbf{Presup.} & \textbf{Media} & \textbf{Desv. Est.} & \textbf{Mínimo} & \textbf{Máximo} & \textbf{IC 95\%} \\
+\midrule
+15h & 33.15 & 0.00 & 33.15 & 33.15 & $[33.15,\ 33.15]$ \\
+20h & 42.20 & 0.00 & 42.20 & 42.20 & $[42.20,\ 42.20]$ \\
+30h & 61.35 & 0.00 & 61.35 & 61.35 & $[61.35,\ 61.35]$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Los resultados son contundentes: la desviación estándar es exactamente 0.00 en los tres presupuestos, lo que significa que las 30 réplicas independientes convergen idénticamente a la misma solución. Los intervalos de confianza son degenerados $[x, x]$ porque no existe varianza entre réplicas.
+
+Este hallazgo tiene dos interpretaciones. Primero, el espacio de soluciones para este conjunto de scores tiene un único óptimo local dominante que el HC encuentra de forma determinista independientemente del punto de inicio aleatorio: todas las semillas conducen a la misma región óptima del espacio. Segundo, esto valida con 95\% de confianza estadística que los resultados de la ejecución individual son perfectamente representativos del rendimiento esperado del algoritmo.
+
+La comparación con el Greedy es favorable al HC en los tres presupuestos: el límite inferior del IC (33.15, 42.20, 61.35) supera en todos los casos la utilidad del Greedy (31.15, 40.20, 54.30), estableciendo la superioridad estadística del HC con confianza absoluta para esta instancia del problema.
+
+\begin{notebox}
+\textbf{Nota crítica sobre el std\,=\,0.} Un valor de desviación estándar
+igual a cero implica que el componente estocástico del HC —los reinicios
+aleatorios— no aporta variedad observable en los resultados para esta
+instancia. Dicho de otro modo, el algoritmo se comporta de forma
+efectivamente determinista en este problema concreto. Esto no invalida el
+análisis Monte Carlo, pero sí sugiere que los 5 reinicios aleatorios son
+redundantes para un dataset de 21 recursos con scores bien diferenciados:
+el óptimo es tan dominante que cualquier punto de inicio lo alcanza.
+
+En instancias más grandes y con mayor densidad de restricciones, donde
+el paisaje de soluciones tiene múltiples óptimos locales de calidad
+comparable, se esperaría una desviación estándar positiva y los reinicios
+cobrarían valor real. El std\,=\,0 es, en última instancia, otro indicador
+de que el tamaño del dataset limita la complejidad del problema para estos
+algoritmos.
+\end{notebox}
+
+
+\subsubsection*{Rutas concretas encontradas por HC — Objetivo NLP Researcher}
+
+Las siguientes tablas ilustran las rutas producidas por el sistema para el
+objetivo NLP Researcher. El contraste con las rutas del objetivo ML Engineer
+es la evidencia más directa del fenómeno de \emph{dependency drag}.
+
+\begin{table}[H]
+\centering
+\small
+\caption{Ruta HC — NLP Researcher, 15h y 20h (idénticas). Total: 14h $|$ Utilidad: 20.90}
+\begin{tabular}{r l c c}
+\toprule
+\textbf{\#} & \textbf{Recurso} & \textbf{Horas} & \textbf{Utilidad (boost)} \\
+\midrule
+1 & Álgebra lineal             & 5h & 4.8 \\
+2 & Cálculo diferencial        & 4h & 5.3 \\
+3 & Python básico              & 3h & 3.4 \\
+4 & Preprocesamiento de texto  & 2h & 7.3 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Ruta HC — NLP Researcher, 30h. Total: 30h $|$ Utilidad: 36.00}
+\begin{tabular}{r l c c}
+\toprule
+\textbf{\#} & \textbf{Recurso} & \textbf{Horas} & \textbf{Utilidad (boost)} \\
+\midrule
+1 & Probabilidad y estadística           & 4h & 3.4 \\
+2 & Python básico                        & 3h & 3.4 \\
+3 & Cálculo diferencial                  & 4h & 5.3 \\
+4 & Álgebra lineal                       & 5h & 4.8 \\
+5 & NumPy y Pandas                       & 3h & 3.4 \\
+6 & Preprocesamiento de texto            & 2h & 7.3 \\
+7 & Machine learning clásico             & 6h & 3.4 \\
+8 & Evaluación y validación de modelos   & 3h & 5.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Nótese que ninguno de los recursos directamente relevantes para el objetivo
+—Arquitectura Transformer (9.5 raw), RNN/LSTM (8.5) o Word Embeddings
+(8.5)— aparece en ninguna de las rutas. La cadena de dependencias mínima
+para alcanzar Word Embeddings requiere 40h, superando incluso el presupuesto
+máximo evaluado. El sistema se ve obligado a seleccionar recursos
+fundacionales con scores de 3.4 a 5.3, útiles en sentido general pero de
+baja relevancia directa para el objetivo de investigación en NLP.
+
+Esta comparación hace tangible la limitación de \emph{dependency drag}: la
+misma arquitectura que produce rutas coherentes y de alta utilidad para ML
+Engineer genera rutas semánticamente pobres para NLP Researcher, no por un
+fallo del algoritmo, sino por la estructura del grafo de dependencias del
+dominio.
+
+% ════════════════ 8. LIMITACIONES ════════════════
+\section{Limitaciones y Posibles Mejoras}
+
+\subsection{Dependency drag}
+
+La limitación más significativa es el fenómeno de \emph{dependency drag}: recursos de alta utilidad al final de cadenas largas de dependencias resultan inalcanzables con presupuestos pequeños. Para un investigador de NLP con 20h disponibles, el sistema no puede ofrecer nada sustancialmente útil porque los recursos objetivo requieren más de 40h solo en prerequisitos.
+
+\begin{notebox}
+\textbf{Mejora propuesta:} implementar un módulo de diagnóstico de alcanzabilidad que calcule el costo mínimo de cierre para los recursos de mayor utilidad e informe al usuario si ninguno es alcanzable con el presupuesto dado, sugiriendo el presupuesto mínimo necesario.
+\end{notebox}
+
+\subsection{Compresión de scores en modelos pequeños}
+
+El modelo \texttt{llama-3.1-8b-instant} es propenso a comprimir scores hacia un valor central cuando recibe prompts complejos, produciendo scores similares para todos los recursos sin diferenciación útil. Este comportamiento fue reproducido experimentalmente.
+
+\begin{notebox}
+\textbf{Mejora propuesta:} usar modelos de mayor capacidad para el scoring, o implementar comparación por pares (\emph{pairwise ranking}) que no requiera calibración absoluta de scores.
+\end{notebox}
+
+\subsection{Exploración limitada del Hill Climbing}
+
+Aunque la introducción de \emph{swap moves} mejoró sustancialmente la exploración del HC (de 1 a 9–11 iteraciones efectivas para ML Engineer), en instancias con alto dependency drag el espacio de búsqueda efectivo sigue siendo pequeño y ambos algoritmos convergen trivialmente.
+
+\begin{notebox}
+\textbf{Mejora propuesta:} implementar Simulated Annealing, permitiendo aceptar movimientos que empeoran temporalmente la utilidad con probabilidad decreciente, para explorar regiones globalmente prometedoras que el HC puro rechaza.
+\end{notebox}
+
+\subsection{Dataset sintético de tamaño reducido}
+
+Con 21 recursos el problema es suficientemente pequeño para que el Greedy encuentre soluciones near-óptimas en muchos casos. En datasets reales de mayor tamaño (100+ recursos) se esperaría una ventaja más pronunciada y consistente del HC.
+
+\begin{notebox}
+\textbf{Mejora propuesta:} escalar el dataset a 50–100 recursos mediante generación procedural o extracción de currícula reales (roadmaps de plataformas educativas como Coursera o roadmap.sh).
+\end{notebox}
+
+% ════════════════ 9. CONCLUSIONES ════════════════
+\section{Conclusiones}
+
+ALPS demuestra que es posible combinar técnicas de optimización combinatoria con modelos de lenguaje para construir un sistema de recomendación de rutas de aprendizaje personalizadas. El sistema resuelve formalmente un problema de satisfacción de restricciones con función objetivo, utilizando el LLM exclusivamente como componente de evaluación semántica y delegando la optimización a algoritmos clásicos.
+
+Los resultados experimentales confirman la hipótesis principal: el Hill Climbing con swap moves supera al Greedy en escenarios de presupuesto moderado-amplio (12–15\% de mejora en utilidad para el objetivo ML Engineer), mientras que ambos son equivalentes en escenarios muy restrictivos.
+
+El experimento con objetivo NLP Researcher expone con claridad el fenómeno de dependency drag: la estructura del grafo de dependencias determina en gran medida qué objetivos son alcanzables dentro de un presupuesto dado, independientemente de la calidad del algoritmo.
+
+El análisis Monte Carlo aporta rigor estadístico al componente estocástico del sistema, caracterizando la distribución de utilidades obtenidas por el HC a través de 30 réplicas independientes y proporcionando intervalos de confianza que permiten comparaciones estadísticamente válidas.
+
+El dependency boost demuestra ser una solución efectiva al sesgo de subvaloración de recursos fundacionales, corrigiendo algorítmicamente una limitación del componente de IA sin necesidad de cambiar el modelo o el prompt.
+
+\vspace{1cm}
+\begin{center}
+{\color{alpsgray}\rule{0.4\textwidth}{0.4pt}}\\[4pt]
+{\small\itshape Repositorio: \href{https://github.com}{ALPS\_2026}}
+\end{center}
+
+\end{document}

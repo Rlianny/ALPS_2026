@@ -216,3 +216,20 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ── ALPS project ───────────────────────────────────────────────────────────
+# Generated data / caches (recreated by generate_dataset.py and the LLM scorer)
+resources.json
+scores.json
+
+# Local UI prototype (scratch)
+alps_ui_prototype.html
+
+# LaTeX build artifacts (only Informe.tex and Informe.pdf are versioned)
+Informe/*.aux
+Informe/*.fdb_latexmk
+Informe/*.fls
+Informe/*.log
+Informe/*.out
+Informe/*.synctex.gz
+Informe/*.toc
