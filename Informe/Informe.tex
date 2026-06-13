@@ -392,19 +392,34 @@ Cada decisión de diseño responde a una restricción concreta:
 
 \subsection{Integración arquitectónica}
 
-Los 21 recursos se scorean secuencialmente con una pausa de 0.5s entre llamadas para respetar los límites de tasa de la API gratuita de Groq. Los scores se persisten en \texttt{scores.json} como caché, evitando recálculos en corridas sucesivas.
+Los 21 recursos se scorean secuencialmente con una pausa de 0.5s entre llamadas para respetar los límites de tasa de la API gratuita de Groq. Los scores se persisten en disco como caché por objetivo (un archivo \texttt{scores\_<hash>.json} por cada objetivo distinto), evitando recálculos en corridas sucesivas: cada objetivo se evalúa con el LLM una sola vez.
+
+\begin{notebox}
+\textbf{Decisión metodológica: fijación de los cachés.} El scoring del LLM
+\emph{no es reproducible entre corridas}, ni siquiera con temperatura 0.1:
+re-evaluar el mismo objetivo produce scores crudos que varían en
+$\pm 0.5$–$1.0$ puntos, y esa variación se propaga por el \emph{dependency
+boost} hasta las utilidades y el óptimo. Como toda la cadena numérica del
+informe depende de unos scores concretos, se fija una única corrida por
+objetivo: los dos cachés (\texttt{scores\_<hash>.json} para ML Engineer y
+NLP Researcher) se versionan en el repositorio y \emph{todas} las tablas de
+este documento se regeneran a partir de ellos. Así el informe es reproducible
+al 100\,\% desde los artefactos commiteados, sin depender de la API ni de la
+variabilidad del modelo.
+\end{notebox}
 
 \subsection{Limitaciones del scoring}
 
 \begin{itemize}[leftmargin=1.5em]
   \item \textbf{Subvaloración de recursos fundacionales:} el modelo evalúa relevancia directa ignorando el valor como prerequisito. Corregido mediante el \emph{dependency boost}.
   \item \textbf{Compresión de scores:} con prompts complejos, el modelo asigna scores similares a todos los recursos, eliminando la diferenciación necesaria. Mitigado mediante prompt minimalista y temperatura baja (0.1).
+  \item \textbf{No-reproducibilidad entre corridas:} a igual objetivo y temperatura, los scores crudos varían entre llamadas. Mitigado fijando y versionando los cachés (ver nota anterior), de modo que los resultados reportados sean estables y auditables.
 \end{itemize}
 
 % ════════════════ 6. METODOLOGÍA ════════════════
 \section{Metodología Experimental}
 
-El diseño experimental compara el comportamiento de ambos algoritmos bajo dos objetivos de aprendizaje cualitativamente distintos y tres niveles de presupuesto, para un total de \textbf{12 configuraciones} (2 objetivos $\times$ 3 presupuestos $\times$ 2 algoritmos).
+El diseño experimental compara el comportamiento de ambos algoritmos bajo dos objetivos de aprendizaje cualitativamente distintos y tres niveles de presupuesto, para un total de \textbf{12 configuraciones} (2 objetivos $\times$ 3 presupuestos $\times$ 2 algoritmos). En cada una de las 6 combinaciones objetivo–presupuesto se calcula además el óptimo exacto como referencia para medir la brecha de optimalidad.
 
 \subsection{Objetivos de aprendizaje}
 
@@ -707,9 +722,11 @@ Nótese que ninguno de los recursos directamente relevantes para el objetivo
 —Arquitectura Transformer (9.5 raw), RNN/LSTM (8.5) o Word Embeddings
 (8.5)— aparece en ninguna de las rutas. La cadena de dependencias mínima
 para alcanzar Word Embeddings requiere 40h, superando incluso el presupuesto
-máximo evaluado. El sistema se ve obligado a seleccionar recursos
-fundacionales con scores de 3.4 a 5.3, útiles en sentido general pero de
-baja relevancia directa para el objetivo de investigación en NLP.
+máximo evaluado. El sistema se ve obligado a llenar la ruta con recursos
+fundacionales de baja relevancia directa (scores de 3.4 a 5.3); el único
+recurso directamente relacionado con NLP que resulta alcanzable es
+\emph{Preprocesamiento de texto} (7.3), por estar a un solo nivel de
+profundidad en el grafo de dependencias.
 
 Esta comparación hace tangible la limitación de \emph{dependency drag}: la
 misma arquitectura que produce rutas coherentes y de alta utilidad para ML
