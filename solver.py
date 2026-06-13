@@ -215,6 +215,64 @@ def greedy_solver(resources: list, budget: int) -> Result:
     )
 
 
+# ── Exact optimum (ground truth) ───────────────────────────────────────────────
+
+def exact_solver(resources: list, budget: int) -> Result:
+    """
+    Compute the provably optimal selection by exhaustive enumeration.
+
+    This is the ground truth used to measure the optimality gap of Greedy and
+    Hill Climbing: only by comparing against the true maximum can we tell
+    whether a heuristic is actually optimal or merely better than its rival.
+
+    Fair comparison — the feasible space is identical to the one the heuristics
+    explore: only resources with utility >= MIN_UTILITY may be chosen as
+    targets, and each chosen target pulls its full dependency closure (which may
+    drag in sub-threshold prerequisites). Every reachable selection is therefore
+    some union of target closures, so enumerating all target subsets and taking
+    the best feasible one is exact over exactly that space.
+
+    Method: exhaustive enumeration over the 2^k subsets of the k selectable
+    targets. Correct and dependency-free, intended for the current dataset
+    scale. For larger instances (50+ targets) replace this with an ILP solver
+    for the precedence-constrained knapsack — the formulation is identical:
+        max  sum u_i x_i   s.t.   sum d_i x_i <= budget,   x_i <= x_j  ∀ j∈prereq(i)
+    """
+    index = build_index(resources)
+    targets = [r.id for r in resources if r.utility >= MIN_UTILITY]
+
+    if len(targets) > 25:
+        raise ValueError(
+            f"{len(targets)} selectable targets is too many for exhaustive "
+            f"enumeration (2^{len(targets)} subsets). Use an ILP solver instead."
+        )
+
+    closures = {tid: compute_closure(tid, index) for tid in targets}
+
+    best_selection: set = set()
+    best_utility: float = 0.0
+    n = len(targets)
+
+    for mask in range(1 << n):
+        selection: set = set()
+        for i in range(n):
+            if mask & (1 << i):
+                selection |= closures[targets[i]]
+        if _hours(selection, index) <= budget:
+            utility = _utility(selection, index)
+            if utility > best_utility:
+                best_utility = utility
+                best_selection = selection
+
+    ordered = topological_sort(best_selection, index)
+    return Result(
+        ordered_path=ordered,
+        total_utility=best_utility,
+        total_hours=_hours(best_selection, index),
+        algorithm="Exact (optimal)",
+    )
+
+
 # ── Algorithm 2: Hill Climbing with random restarts ───────────────────────────
 
 def _random_valid_solution(resources: list, index: dict,
@@ -457,3 +515,5 @@ if __name__ == "__main__":
         print(greedy_solver(resources, budget).summary())
         print()
         print(hill_climbing_solver(resources, budget).summary())
+        print()
+        print(exact_solver(resources, budget).summary())

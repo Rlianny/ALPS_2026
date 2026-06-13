@@ -174,7 +174,7 @@
     </button>
   </div>
 
-  <p style="text-align:center;font-size:11px;color:var(--color-text-tertiary);margin:1rem 0">21 AI/ML resources · Groq / llama-3.1-8b-instant · greedy + hill climbing + Monte Carlo (N=30)</p>
+  <p style="text-align:center;font-size:11px;color:var(--color-text-tertiary);margin:1rem 0">21 AI/ML resources · Groq / llama-3.1-8b-instant · greedy + hill climbing vs exact optimum · Monte Carlo (N=30)</p>
 </div>
 
 <!-- ── SCORING PROGRESS VIEW ──────────────────────────────────────────────── -->
@@ -480,6 +480,13 @@ function buildAll(data) {
   const loser   = winner === data.hc ? data.greedy : data.hc;
   const winName = winner.algorithm;
 
+  // Optimality gap (vs exact optimum)
+  const gapG = data.gap ? data.gap.greedy : null;
+  const gapH = data.gap ? data.gap.hc : null;
+  const optU = data.exact ? data.exact.total_utility : null;
+  const winnerGap = winner === data.hc ? gapH : gapG;
+  const fmtGap = g => g != null ? ` · ${g}% of optimum` : '';
+
   // Path tab stats
   const utilPct = Math.round((winner.total_hours / data.budget) * 100);
   document.getElementById('path-utility').textContent = winner.total_utility.toFixed(1);
@@ -519,15 +526,24 @@ function buildAll(data) {
     data.objective.slice(0, 30) + (data.objective.length > 30 ? '…' : '') + ` · ${data.budget}h budget`;
   document.getElementById('winner-title').textContent = isTie ? 'Tie' : `${winName} wins`;
   document.getElementById('winner-subtitle').textContent =
-    `${winner.resources.length} resources · ${winner.total_hours}h of ${data.budget}h · ${winner.total_utility.toFixed(1)} utility`;
+    `${winner.resources.length} resources · ${winner.total_hours}h of ${data.budget}h${fmtGap(winnerGap)}`;
   document.getElementById('winner-pct').textContent = isTie ? '0%' : `+${pctImprove}%`;
   document.getElementById('winner-vs').textContent = isTie ? 'equal utility' : `vs ${loser.algorithm.toLowerCase()}`;
 
   // Algo tab
-  document.getElementById('greedy-summary').textContent = `${data.greedy.total_hours}h · ${data.greedy.total_utility.toFixed(1)} utility`;
-  document.getElementById('hc-summary').textContent     = `${data.hc.total_hours}h · ${data.hc.total_utility.toFixed(1)} utility`;
+  document.getElementById('greedy-summary').textContent = `${data.greedy.total_hours}h · ${data.greedy.total_utility.toFixed(1)} utility${fmtGap(gapG)}`;
+  document.getElementById('hc-summary').textContent     = `${data.hc.total_hours}h · ${data.hc.total_utility.toFixed(1)} utility${fmtGap(gapH)}`;
   document.getElementById('algo-winner-title').textContent = isTie ? 'Tie' : `${winName} wins`;
-  document.getElementById('algo-winner-note').textContent  = isTie ? 'Both algorithms found the same solution' : 'Swap moves found a combination the other missed';
+
+  let algoNote;
+  if (gapH != null && gapH >= 100) {
+    algoNote = isTie
+      ? `Both reached the proven optimum${optU != null ? ` (${optU.toFixed(1)} utility)` : ''}`
+      : `Hill climbing reached the proven optimum · Greedy at ${gapG}%`;
+  } else {
+    algoNote = isTie ? 'Both algorithms found the same solution' : 'Swap moves found a combination the other missed';
+  }
+  document.getElementById('algo-winner-note').textContent  = algoNote;
   document.getElementById('algo-winner-pct').textContent   = isTie ? '0%' : `+${pctImprove}%`;
   document.getElementById('algo-winner-delta').textContent = isTie ? '' : `+${delta} utility`;
 

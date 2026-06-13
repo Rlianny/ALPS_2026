@@ -1,0 +1,26 @@
+{
+  "goal": "I want to work as an ML engineer building and deploying models in production",
+  "utilities": {
+    "python_basics": 2.5,
+    "linear_algebra": 6.5,
+    "calculus": 6.5,
+    "probability": 2.5,
+    "discrete_math": 2.5,
+    "numpy_pandas": 7.5,
+    "data_visualization": 2.5,
+    "classical_ml": 4.5,
+    "optimization": 6.5,
+    "text_preprocessing": 4.5,
+    "neural_networks": 8.5,
+    "model_evaluation": 6.5,
+    "embeddings": 6.5,
+    "cnn": 7.5,
+    "rnn": 7.5,
+    "transformers": 6.5,
+    "llm_fine_tuning": 8.5,
+    "classical_nlp": 2.5,
+    "basic_rl": 4.5,
+    "mlops": 8.5,
+    "interpretability": 6.5
+  }
+}

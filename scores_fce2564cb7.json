@@ -1,0 +1,26 @@
+{
+  "goal": "I want to research NLP and understand how large language models work internally",
+  "utilities": {
+    "python_basics": 0.5,
+    "linear_algebra": 2.5,
+    "calculus": 2.5,
+    "probability": 1.0,
+    "discrete_math": 2.5,
+    "numpy_pandas": 0.5,
+    "data_visualization": 0.5,
+    "classical_ml": 0.5,
+    "optimization": 0.5,
+    "text_preprocessing": 4.5,
+    "neural_networks": 2.5,
+    "model_evaluation": 2.0,
+    "embeddings": 8.5,
+    "cnn": 0.5,
+    "rnn": 8.5,
+    "transformers": 9.5,
+    "llm_fine_tuning": 8.5,
+    "classical_nlp": 4.5,
+    "basic_rl": 2.5,
+    "mlops": 0.0,
+    "interpretability": 2.5
+  }
+}
