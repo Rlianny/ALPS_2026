@@ -354,6 +354,95 @@ def hill_climbing_solver(resources: list, budget: int,
     )
 
 
+# ── Monte Carlo analysis ───────────────────────────────────────────────────────
+
+import math
+from dataclasses import field as dc_field
+
+@dataclass
+class MonteCarloStats:
+    """
+    Statistics from N independent Hill Climbing runs.
+
+    Because HC is non-deterministic (depends on random seeds), a single run
+    is not a reliable estimate of its true performance. Running it N times
+    produces a sample from the distribution of achievable utilities, allowing
+    proper statistical characterization.
+
+    Connection to simulation course:
+        - Each HC run generates one observation of the random variable U
+          (utility of the best solution found), whose distribution depends
+          on the uniform random permutations used to build initial solutions.
+        - The N independent runs constitute a Monte Carlo simulation.
+        - Mean and 95% CI are computed following standard simulation
+          statistical analysis (Student-t with N-1 degrees of freedom).
+    """
+    budget: int
+    n_runs: int
+    mean: float
+    std: float
+    minimum: float
+    maximum: float
+    ci_lower: float   # 95% confidence interval lower bound
+    ci_upper: float   # 95% confidence interval upper bound
+    all_utilities: list = dc_field(repr=False)
+
+    def summary(self) -> str:
+        return (
+            f"Budget {self.budget}h | N={self.n_runs} runs\n"
+            f"  Mean utility : {self.mean:.2f}\n"
+            f"  Std deviation: {self.std:.2f}\n"
+            f"  Range        : [{self.minimum:.2f}, {self.maximum:.2f}]\n"
+            f"  95% CI       : [{self.ci_lower:.2f}, {self.ci_upper:.2f}]"
+        )
+
+
+def monte_carlo_analysis(resources: list, budget: int,
+                         n_runs: int = 30,
+                         max_iterations: int = 200,
+                         restarts: int = 5) -> MonteCarloStats:
+    """
+    Run Hill Climbing n_runs times with independent random seeds and
+    compute descriptive statistics and a 95% confidence interval.
+
+    Each run uses seed=i (i in 0..n_runs-1), guaranteeing reproducibility
+    while ensuring statistical independence between runs.
+
+    The 95% CI uses the Student-t critical value t(0.025, n_runs-1).
+    For n_runs=30 the value is t=2.045, giving a half-width of
+        margin = 2.045 * std / sqrt(30)
+    """
+    utilities = []
+    for i in range(n_runs):
+        result = hill_climbing_solver(
+            resources, budget,
+            max_iterations=max_iterations,
+            restarts=restarts,
+            seed=i
+        )
+        utilities.append(result.total_utility)
+
+    n    = len(utilities)
+    mean = sum(utilities) / n
+    std  = math.sqrt(sum((u - mean) ** 2 for u in utilities) / (n - 1))
+
+    # t critical value for 95% CI with n-1=29 degrees of freedom
+    t_crit = 2.045
+    margin = t_crit * std / math.sqrt(n)
+
+    return MonteCarloStats(
+        budget=budget,
+        n_runs=n,
+        mean=mean,
+        std=std,
+        minimum=min(utilities),
+        maximum=max(utilities),
+        ci_lower=mean - margin,
+        ci_upper=mean + margin,
+        all_utilities=utilities,
+    )
+
+
 # ── Smoke test (no LLM needed) ─────────────────────────────────────────────────
 
 if __name__ == "__main__":

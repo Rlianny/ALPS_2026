@@ -174,7 +174,7 @@
     </button>
   </div>
 
-  <p style="text-align:center;font-size:11px;color:var(--color-text-tertiary);margin:1rem 0">21 AI/ML resources · Groq / llama-3.1-8b-instant · greedy + hill climbing</p>
+  <p style="text-align:center;font-size:11px;color:var(--color-text-tertiary);margin:1rem 0">21 AI/ML resources · Groq / llama-3.1-8b-instant · greedy + hill climbing + Monte Carlo (N=30)</p>
 </div>
 
 <!-- ── SCORING PROGRESS VIEW ──────────────────────────────────────────────── -->
@@ -233,9 +233,10 @@
   </div>
 
   <div style="display:flex;gap:4px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:4px;margin-bottom:1rem">
-    <button id="tb-path"   class="tab-btn" onclick="switchTab('path')">Your path</button>
-    <button id="tb-algo"   class="tab-btn" onclick="switchTab('algo')">Algorithms</button>
-    <button id="tb-scores" class="tab-btn" onclick="switchTab('scores')">All scores</button>
+    <button id="tb-path"      class="tab-btn" onclick="switchTab('path')">Your path</button>
+    <button id="tb-algo"      class="tab-btn" onclick="switchTab('algo')">Algorithms</button>
+    <button id="tb-scores"    class="tab-btn" onclick="switchTab('scores')">All scores</button>
+    <button id="tb-stability" class="tab-btn" onclick="switchTab('stability')">Stability</button>
   </div>
 
   <!-- PATH TAB -->
@@ -301,6 +302,56 @@
     </div>
   </div>
 
+  <!-- STABILITY TAB -->
+  <div id="tc-stability" style="display:none;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1.25rem">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+      <i class="ti ti-chart-histogram" style="font-size:16px;color:var(--color-text-info)" aria-hidden="true"></i>
+      <span style="font-size:13px;font-weight:500;color:var(--color-text-primary)">How reliable is Hill Climbing?</span>
+    </div>
+    <div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:1.25rem">30 independent runs · different random seeds · same budget</div>
+
+    <div id="mc-session-banner" style="border-radius:var(--border-radius-md);padding:10px 14px;margin-bottom:1.25rem;display:flex;align-items:center;justify-content:space-between">
+      <div>
+        <div id="mc-session-title" style="font-size:13px;font-weight:500"></div>
+        <div id="mc-session-note"  style="font-size:11px;opacity:.8;margin-top:2px"></div>
+      </div>
+      <div style="text-align:right">
+        <div id="mc-session-val"   style="font-size:22px;font-weight:500;font-family:var(--font-mono)"></div>
+        <div id="mc-session-delta" style="font-size:11px;opacity:.8"></div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.25rem">
+      <div style="background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:12px">
+        <div style="font-size:10px;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Mean utility</div>
+        <div id="mc-mean" style="font-size:22px;font-weight:500;font-family:var(--font-mono);color:var(--color-text-primary)"></div>
+        <div id="mc-std"  style="font-size:11px;color:var(--color-text-secondary);margin-top:2px"></div>
+      </div>
+      <div style="background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:12px">
+        <div style="font-size:10px;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">95% Confidence interval</div>
+        <div id="mc-ci"  style="font-size:15px;font-weight:500;font-family:var(--font-mono);color:var(--color-text-info)"></div>
+        <div id="mc-n"   style="font-size:11px;color:var(--color-text-secondary);margin-top:2px"></div>
+      </div>
+    </div>
+
+    <div style="background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:14px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:8px">
+        <span style="font-size:10px;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:.5px">Distribution range</span>
+        <span id="mc-range-label" style="font-size:10px;color:var(--color-text-secondary);font-family:var(--font-mono)"></span>
+      </div>
+      <div style="position:relative;height:18px;margin:0 0 8px">
+        <div id="mc-bar-bg"    style="position:absolute;top:7px;left:0;right:0;height:4px;background:var(--color-border-tertiary);border-radius:2px"></div>
+        <div id="mc-bar-ci"    style="position:absolute;top:5px;height:8px;background:var(--color-text-info);opacity:.35;border-radius:2px"></div>
+        <div id="mc-bar-dot"   style="position:absolute;top:4px;width:10px;height:10px;border-radius:50%;background:var(--color-text-success);border:2px solid var(--color-background-primary);transform:translateX(-50%)"></div>
+        <div id="mc-bar-mean"  style="position:absolute;top:4px;width:2px;height:10px;background:var(--color-text-secondary);transform:translateX(-50%)"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span id="mc-lbl-min" style="font-size:10px;color:var(--color-text-tertiary);font-family:var(--font-mono)"></span>
+        <span id="mc-lbl-max" style="font-size:10px;color:var(--color-text-tertiary);font-family:var(--font-mono)"></span>
+      </div>
+    </div>
+  </div>
+
   <!-- SCORES TAB -->
   <div id="tc-scores" style="display:none;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);padding:1.25rem">
     <div style="font-size:11px;color:var(--color-text-secondary);margin-bottom:12px">21 resources · sorted by boosted score · highlighted = selected by winning path</div>
@@ -329,7 +380,7 @@ function showView(name) {
 }
 
 function switchTab(name) {
-  ['path','algo','scores'].forEach(t => {
+  ['path','algo','scores','stability'].forEach(t => {
     const c = document.getElementById(`tc-${t}`), b = document.getElementById(`tb-${t}`);
     if (c) c.style.display = t === name ? 'block' : 'none';
     if (b) {
@@ -497,6 +548,49 @@ function buildAll(data) {
       container.appendChild(row);
     });
   });
+
+  // Stability (Monte Carlo) tab
+  if (data.mc) {
+    const mc = data.mc;
+    const hcUtil = data.hc.total_utility;
+    const aboveMean = hcUtil > mc.mean;
+    const diff = Math.abs(hcUtil - mc.mean).toFixed(2);
+    const sessionColor = aboveMean ? 'var(--color-text-success)' : hcUtil < mc.mean ? 'var(--color-text-warning)' : 'var(--color-text-secondary)';
+    const sessionBg    = aboveMean ? 'var(--color-background-success)' : hcUtil < mc.mean ? 'var(--color-background-warning)' : 'var(--color-background-secondary)';
+    const sessionBdr   = aboveMean ? 'var(--color-border-success)' : hcUtil < mc.mean ? 'var(--color-border-warning)' : 'var(--color-border-tertiary)';
+
+    const banner = document.getElementById('mc-session-banner');
+    banner.style.background  = sessionBg;
+    banner.style.border      = `0.5px solid ${sessionBdr}`;
+
+    document.getElementById('mc-session-title').style.color = sessionColor;
+    document.getElementById('mc-session-note').style.color  = sessionColor;
+    document.getElementById('mc-session-val').style.color   = sessionColor;
+    document.getElementById('mc-session-delta').style.color = sessionColor;
+
+    document.getElementById('mc-session-title').textContent = aboveMean
+      ? 'Your run is above average' : hcUtil < mc.mean ? 'Your run is below average' : 'Your run matches the average';
+    document.getElementById('mc-session-note').textContent  = `HC with seed=42 · single-run utility`;
+    document.getElementById('mc-session-val').textContent   = hcUtil.toFixed(1);
+    document.getElementById('mc-session-delta').textContent = aboveMean
+      ? `+${diff} vs mean` : hcUtil < mc.mean ? `−${diff} vs mean` : 'equal to mean';
+
+    document.getElementById('mc-mean').textContent = mc.mean.toFixed(2);
+    document.getElementById('mc-std').textContent  = `± ${mc.std.toFixed(2)} std deviation`;
+    document.getElementById('mc-ci').textContent   = `[${mc.ci_lower.toFixed(2)}, ${mc.ci_upper.toFixed(2)}]`;
+    document.getElementById('mc-n').textContent    = `${mc.n_runs} independent runs`;
+    document.getElementById('mc-range-label').textContent = `${mc.minimum.toFixed(1)} – ${mc.maximum.toFixed(1)}`;
+    document.getElementById('mc-lbl-min').textContent = mc.minimum.toFixed(1);
+    document.getElementById('mc-lbl-max').textContent = mc.maximum.toFixed(1);
+
+    // Position elements as % of [min, max] range
+    const span = mc.maximum - mc.minimum || 1;
+    const pct = v => ((v - mc.minimum) / span * 100).toFixed(1) + '%';
+    document.getElementById('mc-bar-ci').style.left  = pct(mc.ci_lower);
+    document.getElementById('mc-bar-ci').style.width = ((mc.ci_upper - mc.ci_lower) / span * 100).toFixed(1) + '%';
+    document.getElementById('mc-bar-dot').style.left  = pct(Math.min(Math.max(hcUtil, mc.minimum), mc.maximum));
+    document.getElementById('mc-bar-mean').style.left = pct(mc.mean);
+  }
 
   // Scores tab
   const sb = document.getElementById('scores-body');

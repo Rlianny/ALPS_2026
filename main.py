@@ -17,7 +17,7 @@ import sys
 import os
 import json
 from llm_scorer import score_all, save_scores, load_scores
-from solver import load_resources, build_index, apply_dependency_boost, greedy_solver, hill_climbing_solver
+from solver import load_resources, build_index, apply_dependency_boost, greedy_solver, hill_climbing_solver, monte_carlo_analysis
 
 # ── Experiment configuration ───────────────────────────────────────────────────
 
@@ -26,7 +26,7 @@ SCORES_FILE  = "scores.json"
 
 # The learning goal used for LLM scoring.
 # Change this to test different user profiles.
-GOAL = "I want to research NLP and understand how large language models work internally"
+GOAL = "I want to work as an ML engineer building and deploying models in production"
 
 # Time budgets to test — simulates users with different availability
 BUDGETS = [15, 20, 30]   # hours
@@ -142,6 +142,21 @@ def main():
         result_greedy = greedy_solver(resources, budget)
         result_hc     = hill_climbing_solver(resources, budget, **HC_CONFIG)
         print_comparison(budget, result_greedy, result_hc)
+
+    # ── Step 5: Monte Carlo analysis of Hill Climbing ──────────────────────
+    # HC is non-deterministic: different seeds produce different utilities.
+    # Running 30 independent replications gives a statistical characterization
+    # of HC performance and validates whether single-run results are representative.
+    print(f"\n{'═' * 62}")
+    print("  MONTE CARLO ANALYSIS — Hill Climbing (N=30 runs per budget)")
+    print(f"  {'Budget':<10} {'Mean':>8} {'Std':>7} {'Min':>8} {'Max':>8} {'95% CI':>20}")
+    print(f"  {'─'*60}")
+
+    for budget in BUDGETS:
+        mc = monte_carlo_analysis(resources, budget, n_runs=30)
+        ci = f"[{mc.ci_lower:.2f}, {mc.ci_upper:.2f}]"
+        print(f"  {str(budget)+'h':<10} {mc.mean:>8.2f} {mc.std:>7.2f} "
+              f"{mc.minimum:>8.2f} {mc.maximum:>8.2f} {ci:>20}")
 
     print(f"\n{'═' * 62}")
     print("  Done. Scores cached in scores.json.")

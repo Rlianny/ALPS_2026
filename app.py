@@ -22,6 +22,7 @@ from solver import (
     greedy_solver,
     hill_climbing_solver,
     load_resources,
+    monte_carlo_analysis,
 )
 from groq import Groq
 
@@ -186,8 +187,18 @@ async def run(
 
         result_greedy = await asyncio.to_thread(greedy_solver, resources, budget)
         result_hc     = await asyncio.to_thread(hill_climbing_solver, resources, budget, **HC_CONFIG)
+        mc            = await asyncio.to_thread(monte_carlo_analysis, resources, budget, 30)
 
         payload = _build_result_payload(budget, objective, utilities, resources, result_greedy, result_hc)
+        payload["mc"] = {
+            "n_runs":  mc.n_runs,
+            "mean":    round(mc.mean, 2),
+            "std":     round(mc.std, 2),
+            "minimum": round(mc.minimum, 2),
+            "maximum": round(mc.maximum, 2),
+            "ci_lower": round(mc.ci_lower, 2),
+            "ci_upper": round(mc.ci_upper, 2),
+        }
         yield f"data: {json.dumps(payload)}\n\n"
 
     return StreamingResponse(
