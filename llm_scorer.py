@@ -9,15 +9,32 @@ Role of the LLM in the system:
     of the user's goal.
 """
 
+from __future__ import annotations
+
 import json
 import time
 import re
 import os
+import hashlib
 
-from groq import Groq
-
+# NOTE: `groq` is imported lazily inside the functions that actually call the
+# API. This keeps cached / offline runs working even when the package is not
+# installed, and means the GROQ_API_KEY is only needed when (re)scoring.
 
 MODEL = "llama-3.1-8b-instant"
+
+
+def cache_path_for_goal(goal: str, base_dir: str = ".") -> str:
+    """
+    Map a learning goal to a stable per-goal cache filename.
+
+    Each distinct goal gets its own scores file (e.g. scores_3f9a1c2b4d.json),
+    so switching between goals never overwrites another goal's cache. A goal is
+    therefore scored by the LLM only once, ever — afterwards every run for that
+    goal reads from disk and needs neither the API key nor the groq package.
+    """
+    digest = hashlib.sha1(goal.strip().encode("utf-8")).hexdigest()[:10]
+    return os.path.join(base_dir, f"scores_{digest}.json")
 
 
 def score_resource(client: Groq, goal: str, resource: dict) -> float:
@@ -86,6 +103,8 @@ def score_all(goal: str, resources: list, pause: float = 0.5) -> dict:
     Returns:
         dict mapping resource ID to utility score: {"python_basics": 7.5, ...}
     """
+    from groq import Groq
+
     client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
     utilities = {}
 
@@ -108,6 +127,8 @@ def score_all_yielding(goal: str, resources: list, pause: float = 0.5):
     Generator version of score_all — yields a progress dict after each resource is scored.
     Used by the web UI to stream live progress via SSE.
     """
+    from groq import Groq
+
     client = Groq(api_key=os.environ.get("GROQ_API_KEY"))
     for i, resource in enumerate(resources):
         score = score_resource(client, goal, resource)

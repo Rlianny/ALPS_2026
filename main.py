@@ -16,13 +16,22 @@ Usage:
 import sys
 import os
 import json
-from llm_scorer import score_all, save_scores, load_scores
+
+# Load GROQ_API_KEY (and anything else) from a local .env if present, so the
+# key never has to be exported by hand. Optional: skipped if python-dotenv
+# isn't installed.
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
+
+from llm_scorer import score_all, save_scores, load_scores, cache_path_for_goal
 from solver import load_resources, build_index, apply_dependency_boost, greedy_solver, hill_climbing_solver, monte_carlo_analysis
 
 # ── Experiment configuration ───────────────────────────────────────────────────
 
 DATASET_FILE = "resources.json"
-SCORES_FILE  = "scores.json"
 
 # The learning goal used for LLM scoring.
 # Change this to test different user profiles.
@@ -104,18 +113,16 @@ def main():
     print(f"Loaded {len(raw)} resources from '{DATASET_FILE}'.")
 
     # ── Step 2: LLM scoring ────────────────────────────────────────────────────
-    if os.path.exists(SCORES_FILE) and not force_rescore:
-        cached_goal, utilities = load_scores(SCORES_FILE)
-        print(f"Loaded cached scores from '{SCORES_FILE}'.")
-        if cached_goal != GOAL:
-            print(f"  WARNING: cached goal differs from current goal.")
-            print(f"    Cached : {cached_goal}")
-            print(f"    Current: {GOAL}")
-            print("  Run with --rescore to recompute.\n")
+    # Each goal has its own cache file, so this goal is scored at most once
+    # ever; subsequent runs need neither the API key nor the groq package.
+    scores_file = cache_path_for_goal(GOAL)
+    if os.path.exists(scores_file) and not force_rescore:
+        _, utilities = load_scores(scores_file)
+        print(f"Loaded cached scores from '{scores_file}'.")
     else:
         print(f"\nScoring resources with LLM ({len(raw)} API calls)...")
         utilities = score_all(GOAL, raw)
-        save_scores(utilities, GOAL, SCORES_FILE)
+        save_scores(utilities, GOAL, scores_file)
 
     # ── Step 3: load resources and apply dependency boost ─────────────────────
     resources = load_resources(DATASET_FILE, utilities)
@@ -159,7 +166,7 @@ def main():
               f"{mc.minimum:>8.2f} {mc.maximum:>8.2f} {ci:>20}")
 
     print(f"\n{'═' * 62}")
-    print("  Done. Scores cached in scores.json.")
+    print(f"  Done. Scores cached in {scores_file}.")
     print("  Run with --rescore to test a different learning goal.")
     print(f"{'═' * 62}\n")
 

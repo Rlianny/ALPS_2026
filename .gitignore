@@ -219,8 +219,10 @@ __marimo__/
 
 # ── ALPS project ───────────────────────────────────────────────────────────
 # Generated data / caches (recreated by generate_dataset.py and the LLM scorer)
+# Per-goal score caches are named scores_<hash>.json. To make a specific
+# experiment reproducible, commit its cache with: git add -f scores_<hash>.json
 resources.json
-scores.json
+scores*.json
 
 # Local UI prototype (scratch)
 alps_ui_prototype.html
