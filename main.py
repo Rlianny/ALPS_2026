@@ -27,7 +27,7 @@ except ImportError:
     pass
 
 from llm_scorer import score_all, save_scores, load_scores, cache_path_for_goal
-from solver import load_resources, build_index, apply_dependency_boost, greedy_solver, hill_climbing_solver, monte_carlo_analysis
+from solver import load_resources, build_index, apply_dependency_boost, greedy_solver, hill_climbing_solver, exact_solver, monte_carlo_analysis
 
 # ── Experiment configuration ───────────────────────────────────────────────────
 
@@ -54,47 +54,62 @@ def separator(char: str = "─", width: int = 62) -> str:
     return char * width
 
 
-def print_comparison(budget: int, result_greedy, result_hc):
-    """Print a side-by-side comparison of both algorithm results."""
+def _gap(value: float, optimum: float) -> str:
+    """Percentage of the optimum reached (100% = optimal)."""
+    if optimum <= 0:
+        return "  —"
+    return f"{100.0 * value / optimum:.1f}%"
+
+
+def print_comparison(budget: int, result_greedy, result_hc, result_exact):
+    """Print a side-by-side comparison of both heuristics against the optimum."""
     print(f"\n{'━' * 62}")
     print(f"  Budget: {budget}h")
     print(f"{'━' * 62}")
 
+    opt = result_exact.total_utility
+
     # Header row
-    print(f"  {'Metric':<22} {'Greedy':>16} {'Hill Climbing':>16}")
+    print(f"  {'Metric':<18} {'Greedy':>13} {'Hill Climbing':>13} {'Optimal':>13}")
     print(f"  {separator()}")
 
     metrics = [
-        ("Total hours",    f"{result_greedy.total_hours}h",
-                           f"{result_hc.total_hours}h"),
-        ("Total utility",  f"{result_greedy.total_utility:.2f}",
-                           f"{result_hc.total_utility:.2f}"),
-        ("Resources",      str(len(result_greedy.ordered_path)),
-                           str(len(result_hc.ordered_path))),
-        ("Iterations",     "—",
-                           str(result_hc.iterations)),
+        ("Total hours",   f"{result_greedy.total_hours}h",
+                          f"{result_hc.total_hours}h",
+                          f"{result_exact.total_hours}h"),
+        ("Total utility", f"{result_greedy.total_utility:.2f}",
+                          f"{result_hc.total_utility:.2f}",
+                          f"{result_exact.total_utility:.2f}"),
+        ("% of optimum",  _gap(result_greedy.total_utility, opt),
+                          _gap(result_hc.total_utility, opt),
+                          "100.0%"),
+        ("Resources",     str(len(result_greedy.ordered_path)),
+                          str(len(result_hc.ordered_path)),
+                          str(len(result_exact.ordered_path))),
+        ("Iterations",    "—",
+                          str(result_hc.iterations),
+                          "—"),
     ]
 
-    for label, g_val, hc_val in metrics:
-        print(f"  {label:<22} {g_val:>16} {hc_val:>16}")
+    for label, g_val, hc_val, ex_val in metrics:
+        print(f"  {label:<18} {g_val:>13} {hc_val:>13} {ex_val:>13}")
 
-    # Winner annotation
-    if result_hc.total_utility > result_greedy.total_utility:
-        winner = "Hill Climbing wins ▲"
-        diff = result_hc.total_utility - result_greedy.total_utility
-    elif result_greedy.total_utility > result_hc.total_utility:
-        winner = "Greedy wins ▲"
-        diff = result_greedy.total_utility - result_hc.total_utility
+    # Optimality annotation
+    g_opt  = abs(result_greedy.total_utility - opt) < 1e-9
+    hc_opt = abs(result_hc.total_utility - opt) < 1e-9
+    if hc_opt and g_opt:
+        note = "Both reach the optimum"
+    elif hc_opt:
+        note = "Hill Climbing reaches the optimum; Greedy does not"
+    elif g_opt:
+        note = "Greedy reaches the optimum; Hill Climbing does not"
     else:
-        winner = "Tie"
-        diff = 0.0
+        note = "Neither heuristic reaches the optimum"
+    print(f"\n  → {note}")
 
-    print(f"\n  → {winner}  (Δ utility = {diff:.2f})")
-
-    # Best path (from whichever algorithm won, or greedy on tie)
-    best = result_hc if result_hc.total_utility >= result_greedy.total_utility else result_greedy
-    print(f"\n  Best path ({best.algorithm}):")
-    for i, r in enumerate(best.ordered_path, 1):
+    # Optimal path
+    print(f"\n  Optimal path:")
+    for i, r in enumerate(result_exact.ordered_path, 1):
         print(f"    {i}. [{r.duration_hours}h | {r.utility:.1f}/10] {r.name}")
 
 
@@ -148,7 +163,8 @@ def main():
     for budget in BUDGETS:
         result_greedy = greedy_solver(resources, budget)
         result_hc     = hill_climbing_solver(resources, budget, **HC_CONFIG)
-        print_comparison(budget, result_greedy, result_hc)
+        result_exact  = exact_solver(resources, budget)
+        print_comparison(budget, result_greedy, result_hc, result_exact)
 
     # ── Step 5: Monte Carlo analysis of Hill Climbing ──────────────────────
     # HC is non-deterministic: different seeds produce different utilities.
