@@ -765,6 +765,8 @@ Aunque la introducción de \emph{swap moves} mejoró sustancialmente la explorac
 
 Con 21 recursos el problema es suficientemente pequeño para que el Greedy encuentre soluciones near-óptimas en muchos casos. En datasets reales de mayor tamaño (100+ recursos) se esperaría una ventaja más pronunciada y consistente del HC.
 
+Conviene ser explícito sobre una consecuencia de este tamaño: a la escala actual el óptimo exacto es directamente computable ($2^{18}$ evaluaciones, $<1$\,s), por lo que el Hill Climbing no es estrictamente necesario aquí —el solver exacto lo domina en calidad y es viable en tiempo. La justificación del HC es \emph{asintótica}: el knapsack con restricciones de precedencia es NP-difícil, de modo que la enumeración exhaustiva (y, más allá de cierto punto, también el ILP) deja de ser factible al crecer la instancia, mientras que el costo de los \emph{swap moves} crece de forma polinomial. Los resultados de este trabajo deben leerse, por tanto, como una \emph{validación de corrección} del HC en una instancia donde se conoce el óptimo, no como una demostración de su necesidad práctica a esta escala.
+
 \begin{notebox}
 \textbf{Mejora propuesta:} escalar el dataset a 50–100 recursos mediante generación procedural o extracción de currícula reales (roadmaps de plataformas educativas como Coursera o roadmap.sh).
 \end{notebox}
