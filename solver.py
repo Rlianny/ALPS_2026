@@ -14,10 +14,6 @@ from collections import deque
 from dataclasses import dataclass
 
 
-# Resources below this boosted utility threshold are not selected as targets.
-# They may still appear as forced prerequisites of high-utility resources.
-MIN_UTILITY = 4.0
-
 
 # ── Data structures ────────────────────────────────────────────────────────────
 
@@ -193,7 +189,7 @@ def greedy_solver(resources: list, budget: int) -> Result:
             new_ids = closure - selection
             new_hours = sum(index[rid].duration_hours for rid in new_ids)
             new_utility = sum(index[rid].utility for rid in new_ids)
-            if new_hours > 0 and new_hours <= remaining and r.utility >= MIN_UTILITY:
+            if new_hours > 0 and new_hours <= remaining:
                 feasible.append((r, new_ids, new_hours, new_utility))
 
         if not feasible:
@@ -219,56 +215,56 @@ def greedy_solver(resources: list, budget: int) -> Result:
 
 def exact_solver(resources: list, budget: int) -> Result:
     """
-    Compute the provably optimal selection by exhaustive enumeration.
+    Compute the provably optimal selection (ground truth for the optimality gap).
 
-    This is the ground truth used to measure the optimality gap of Greedy and
-    Hill Climbing: only by comparing against the true maximum can we tell
-    whether a heuristic is actually optimal or merely better than its rival.
-
-    Fair comparison — the feasible space is identical to the one the heuristics
-    explore: only resources with utility >= MIN_UTILITY may be chosen as
-    targets, and each chosen target pulls its full dependency closure (which may
-    drag in sub-threshold prerequisites). Every reachable selection is therefore
-    some union of target closures, so enumerating all target subsets and taking
-    the best feasible one is exact over exactly that space.
-
-    Method: exhaustive enumeration over the 2^k subsets of the k selectable
-    targets. Correct and dependency-free, intended for the current dataset
-    scale. For larger instances (50+ targets) replace this with an ILP solver
-    for the precedence-constrained knapsack — the formulation is identical:
+    Solves the precedence-constrained knapsack exactly:
         max  sum u_i x_i   s.t.   sum d_i x_i <= budget,   x_i <= x_j  ∀ j∈prereq(i)
+
+    Only by comparing against this true maximum can we tell whether a heuristic
+    is actually optimal or merely better than its rival.
+
+    Method: branch and bound over resources in topological order. A resource may
+    be included only once all its prerequisites are already included (so every
+    visited state is dependency-closed and feasible). A suffix sum of remaining
+    positive utilities bounds the search, pruning branches that cannot beat the
+    incumbent. Dependency-free and fast at the dataset scale; the same
+    formulation maps directly to an ILP for larger instances.
     """
     index = build_index(resources)
-    targets = [r.id for r in resources if r.utility >= MIN_UTILITY]
+    order = topological_sort(set(index), index)   # prerequisites before dependents
+    n = len(order)
 
-    if len(targets) > 25:
-        raise ValueError(
-            f"{len(targets)} selectable targets is too many for exhaustive "
-            f"enumeration (2^{len(targets)} subsets). Use an ILP solver instead."
-        )
+    # Suffix sum of positive utilities: an optimistic bound on the gain still
+    # achievable from position i onward (ignores budget/closure, so never
+    # underestimates — safe for pruning).
+    suffix = [0.0] * (n + 1)
+    for i in range(n - 1, -1, -1):
+        suffix[i] = suffix[i + 1] + max(0.0, order[i].utility)
 
-    closures = {tid: compute_closure(tid, index) for tid in targets}
+    best = {"utility": 0.0, "selection": set()}
 
-    best_selection: set = set()
-    best_utility: float = 0.0
-    n = len(targets)
+    def recurse(i: int, selected: set, hours: int, utility: float) -> None:
+        if utility > best["utility"]:
+            best["utility"] = utility
+            best["selection"] = set(selected)
+        if i == n or utility + suffix[i] <= best["utility"]:
+            return
+        r = order[i]
+        # Branch 1: exclude r_i
+        recurse(i + 1, selected, hours, utility)
+        # Branch 2: include r_i (only if it fits and its prerequisites are in)
+        if hours + r.duration_hours <= budget and all(p in selected for p in r.prerequisites):
+            selected.add(r.id)
+            recurse(i + 1, selected, hours + r.duration_hours, utility + r.utility)
+            selected.discard(r.id)
 
-    for mask in range(1 << n):
-        selection: set = set()
-        for i in range(n):
-            if mask & (1 << i):
-                selection |= closures[targets[i]]
-        if _hours(selection, index) <= budget:
-            utility = _utility(selection, index)
-            if utility > best_utility:
-                best_utility = utility
-                best_selection = selection
+    recurse(0, set(), 0, 0.0)
 
-    ordered = topological_sort(best_selection, index)
+    ordered = topological_sort(best["selection"], index)
     return Result(
         ordered_path=ordered,
-        total_utility=best_utility,
-        total_hours=_hours(best_selection, index),
+        total_utility=best["utility"],
+        total_hours=_hours(best["selection"], index),
         algorithm="Exact (optimal)",
     )
 
@@ -286,8 +282,6 @@ def _random_valid_solution(resources: list, index: dict,
     shuffled = resources[:]
     rng.shuffle(shuffled)
     for r in shuffled:
-        if r.utility < MIN_UTILITY:
-            continue   # skip low-utility targets
         closure = compute_closure(r.id, index)
         new_hours = _hours(closure - selection, index)
         if _hours(selection, index) + new_hours <= budget:
@@ -320,9 +314,9 @@ def _get_neighbors(selection: set, resources: list,
         if not any(rid in index[other].prerequisites for other in selection)
     ]
 
-    # ADD moves — add a resource (plus its closure) if it fits and meets threshold
+    # ADD moves — add a resource (plus its closure) if it fits
     for r in resources:
-        if r.id not in selection and r.utility >= MIN_UTILITY:
+        if r.id not in selection:
             closure = compute_closure(r.id, index)
             added_hours = _hours(closure - selection, index)
             if added_hours <= remaining:
@@ -342,7 +336,7 @@ def _get_neighbors(selection: set, resources: list,
         new_remaining = remaining + freed
 
         for r in resources:
-            if r.id not in selection and r.utility >= MIN_UTILITY:
+            if r.id not in selection:
                 closure = compute_closure(r.id, index)
                 added_hours = _hours(closure - after_remove, index)
                 if 0 < added_hours <= new_remaining:
