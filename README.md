@@ -1,5 +1,7 @@
 # ALPS — AI Learning Path Selector
 
+![ALPS banner](banner.png)
+
 ALPS builds a personalized learning path from a catalog of educational
 resources with prerequisite dependencies. Given a learning goal in natural
 language and a time budget in hours, it selects the optimal subset of
