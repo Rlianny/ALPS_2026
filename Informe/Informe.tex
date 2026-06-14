@@ -246,7 +246,7 @@ u_{\text{boost}}(r_i) = \min\!\Big(10.0,\; u_{\text{raw}}(r_i) + 0.3 \cdot \max\
 
 Cada recurso recibe un boost proporcional a la utilidad máxima de todos los recursos que transitivamente dependen de él. El factor $\alpha = 0.3$ se determinó empíricamente.
 
-\textbf{Umbral mínimo de utilidad.} Recursos con score boosted menor a 4.0 no se seleccionan como objetivos directos, evitando que el algoritmo rellene el presupuesto con recursos de baja utilidad. Un recurso por debajo del umbral puede aún aparecer como prerequisito forzado de un recurso que sí supera el umbral.
+\textbf{Sin umbral de utilidad.} El sistema no impone ningún piso mínimo de utilidad: la selección se rige únicamente por la función objetivo. Una versión preliminar descartaba como objetivos los recursos por debajo de un umbral (boosted $<4.0$) para evitar ``relleno'' de baja utilidad, pero al validar contra el óptimo exacto se comprobó que ese umbral dejaba utilidad alcanzable sin explotar (sección~\ref{sec:resultados}); el propio objetivo de maximización ya penaliza los recursos de baja utilidad, de modo que el umbral era innecesario y subóptimo. Se eliminó.
 
 \subsection{Algoritmo 1: Greedy (baseline)}
 
@@ -278,25 +278,32 @@ En cada iteración se mueve al vecino con mayor utilidad si supera a la solució
 Comparar dos heurísticas entre sí solo dice cuál es mejor, no cuán lejos
 están del máximo alcanzable. Para medir la \emph{brecha de optimalidad}
 (\textit{optimality gap}) de Greedy y Hill Climbing se calcula el óptimo
-exacto mediante \textbf{enumeración exhaustiva} sobre el mismo espacio de
-soluciones que exploran las heurísticas: se recorren los $2^k$ subconjuntos
-de los $k$ recursos seleccionables (los que superan el umbral
-$\mathrm{MIN\_UTILITY}$), cada uno arrastra su cierre de dependencias, y se
-conserva la selección factible de mayor utilidad. Como toda solución
-alcanzable por las heurísticas es una unión de cierres de recursos
-seleccionables, la enumeración es exacta sobre exactamente ese espacio.
-
-El procedimiento es \emph{dependency-free} y suficiente para el tamaño del
-dataset actual ($k=18$ recursos seleccionables, $2^{18}\approx 2.6\times10^5$
-evaluaciones, $<1$\,s). La formulación equivalente como programa lineal
-entero (ILP) del \emph{knapsack con restricciones de precedencia} es:
+exacto del problema, es decir, del \emph{knapsack con restricciones de
+precedencia}:
 \[
 \max \sum_i u_i x_i
 \quad \text{s.a.}\quad
 \sum_i d_i x_i \le T,\qquad
-x_i \le x_j \;\; \forall\, r_j \in \mathrm{prereqs}(r_i),
+x_i \le x_j \;\; \forall\, r_j \in \mathrm{prereqs}(r_i).
 \]
-y sería la vía recomendada para escalar a instancias de 50+ recursos.
+
+Se resuelve por \textbf{branch and bound} recorriendo los recursos en orden
+topológico (prerequisitos antes que dependientes). Un recurso solo puede
+incluirse cuando todos sus prerequisitos ya están incluidos —garantizando que
+todo estado visitado es una selección cerrada y factible— y una cota
+optimista (suma de las utilidades positivas restantes) poda las ramas que no
+pueden superar la mejor solución hallada. El procedimiento es
+\emph{dependency-free}, exacto y muy rápido a esta escala ($\sim 3$\,ms por
+presupuesto); la misma formulación se traslada directamente a un solver ILP
+para escalar a instancias de 50+ recursos.
+
+\begin{notebox}
+\textbf{El óptimo exacto como herramienta de validación.} Disponer del máximo
+demostrable no solo permite cuantificar la brecha de las heurísticas: también
+sirvió para auditar el propio diseño del sistema. Fue al comparar contra él
+que se detectó que el umbral de utilidad (sección~4.1) producía soluciones
+subóptimas, lo que motivó su eliminación.
+\end{notebox}
 
 \subsection{Ordenamiento topológico de la selección}
 
@@ -440,7 +447,7 @@ Se evalúan tres presupuestos: \textbf{15h} (restrictivo), \textbf{20h} (moderad
   \item \textbf{Recursos seleccionados:} cardinalidad del conjunto seleccionado.
   \item \textbf{Iteraciones (HC):} número total de pasos de búsqueda realizados.
   \item \textbf{Brecha de optimalidad:} porcentaje de la utilidad óptima
-        (calculada por enumeración exhaustiva) que alcanza cada heurística.
+        (calculada exactamente por branch and bound) que alcanza cada heurística.
         Una heurística con 100\,\% es demostrablemente óptima para esa instancia.
 \end{itemize}
 
@@ -472,6 +479,7 @@ donde $s$ es la desviación estándar muestral.
 
 % ════════════════ 7. RESULTADOS ════════════════
 \section{Resultados y Análisis}
+\label{sec:resultados}
 
 \subsection{Scores del LLM y efecto del dependency boost}
 
@@ -522,63 +530,67 @@ La diferenciación por perfil es nítida: \emph{MLOps} obtiene 8.5 para ML Engin
 \cmidrule(lr){2-4} \cmidrule(lr){5-8} \cmidrule(lr){9-9}
 \textbf{Presup.} & Horas & Util. & \% ópt & Horas & Util. & Iter. & \% ópt & Util. \\
 \midrule
-15h & 12h & 31.15 & 94.0\% & 15h & 33.15 & 11 & \textbf{\color{alpsgreen}100\%} & 33.15 \\
-20h & 17h & 40.20 & 95.3\% & 19h & 42.20 & 11 & \textbf{\color{alpsgreen}100\%} & 42.20 \\
-30h & 25h & 54.30 & 88.5\% & 30h & 61.35 & 11 & \textbf{\color{alpsgreen}100\%} & 61.35 \\
+15h & 14h & 33.65 & \textbf{\color{alpsgreen}100\%} & 15h & 33.65 & 8 & \textbf{\color{alpsgreen}100\%} & 33.65 \\
+20h & 19h & 42.70 & \textbf{\color{alpsgreen}100\%} & 20h & 42.70 & 10 & \textbf{\color{alpsgreen}100\%} & 42.70 \\
+30h & 30h & 59.30 & 96.7\% & 30h & 61.35 & 12 & \textbf{\color{alpsgreen}100\%} & 61.35 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-El Hill Climbing supera al Greedy en los tres presupuestos evaluados y, de hecho, \textbf{alcanza el óptimo exacto en todos ellos} (100\,\% del máximo demostrable), mientras el Greedy se queda entre el 88.5\,\% y el 95.3\,\%. La comparación deja de ser ``HC le gana a Greedy'' para convertirse en una afirmación verificable: el HC es óptimo en esta instancia; el Greedy no. Con 15h, el HC obtiene 33.15 frente a 31.15 del Greedy (6\% de mejora) y además utiliza las 15 horas completas mientras el Greedy solo usa 12h —tres horas de presupuesto desaprovechadas. El HC identifica que incluir Álgebra lineal (5h, 9.1) junto con Cálculo y NumPy maximiza la utilidad, combinación que el Greedy no alcanza por sus decisiones irrevocables.
-
-Con 20h, la ventaja del HC se mantiene en 2 puntos de utilidad (42.20 vs 40.20, 5\%). El HC añade Optimización matemática (4h, 9.1) a la ruta mediante un \emph{swap move} que reorganiza la selección para hacer espacio, movimiento imposible para el Greedy una vez que sus primeras elecciones ocupan el presupuesto.
-
-Con 30h, la ventaja crece al 13\% (61.35 vs 54.30) y el HC utiliza el presupuesto completo (30h vs 25h del Greedy), encontrando un recurso adicional: Evaluación y validación de modelos (3h, 9.1). El Greedy nuevamente queda atascado con 5h sin usar porque sus selecciones previas bloquean el acceso a combinaciones más eficientes.
+Con la función objetivo sin umbral, ambas heurísticas resultan notablemente
+competentes en esta instancia. Con 15h y 20h, \textbf{Greedy y Hill Climbing
+alcanzan ambos el óptimo exacto} (33.65 y 42.70 respectivamente): el problema
+es lo bastante pequeño para que incluso la estrategia voraz lo resuelva de
+forma óptima. La diferencia aparece únicamente en el presupuesto más amplio:
+con 30h el HC alcanza el óptimo (61.35) mientras el Greedy se queda en 59.30
+(96.7\,\%). Es el único caso donde las decisiones irrevocables del Greedy le
+impiden la combinación óptima, y donde los \emph{swap moves} del HC marcan la
+diferencia: liberan horas de recursos ya seleccionados para financiar una
+reorganización —la inclusión de Evaluación y validación de modelos (3h, 9.1)—
+que el Greedy no puede alcanzar.
 
 \begin{notebox}
-\textbf{Nota sobre las horas sin usar del Greedy.} El hecho de que el
-Greedy deje 3h sin usar en el caso de 15h y 5h en el de 30h no es un
-error de implementación: es una consecuencia estructural del algoritmo.
-Una vez que el Greedy ha seleccionado un conjunto de recursos, el
-remanente de horas disponibles puede ser insuficiente para incluir
-cualquier candidato restante junto con sus prerequisitos faltantes. El
-algoritmo no retrocede ni intercambia recursos ya seleccionados, por lo
-que ese remanente queda irrecuperable. El HC evita este problema mediante
-los \emph{swap moves}, que liberan horas de recursos ya seleccionados para
-financiar combinaciones más eficientes.
+\textbf{El óptimo exacto reencuadra la comparación.} Disponer del máximo
+demostrable cambia la lectura del experimento: no se trata tanto de que ``el
+HC le gane al Greedy'' como de que, \emph{a esta escala, el problema es fácil}
+y ambas heurísticas son casi óptimas. El Greedy alcanza el óptimo en 2 de 3
+presupuestos y el HC en los 3. La ventaja del HC es real pero marginal
+(un +3.5\,\% en el único presupuesto donde difieren) y, como se discute en la
+sección de limitaciones, su valor frente al Greedy es esencialmente asintótico.
 \end{notebox}
-
 
 \begin{notebox}
 \textbf{Nota sobre la generalización de los resultados.} El dataset de
-21 recursos es suficientemente pequeño para que el Greedy encuentre
-soluciones near-óptimas en muchos casos. Con instancias más grandes
-(50–100 recursos y grafos de dependencias más densos), la ventaja del
-HC sería previsiblemente más pronunciada y consistente, dado que el
-espacio de búsqueda crecería exponencialmente mientras que el costo de
-los swap moves crece de forma polinomial. Los resultados aquí reportados
-deben interpretarse como válidos para esta instancia concreta; su
-generalización a datasets mayores requeriría experimentación adicional.
+21 recursos es suficientemente pequeño para que tanto el Greedy como el HC
+encuentren soluciones óptimas o near-óptimas en casi todos los casos —y para
+que el propio óptimo exacto se calcule en milisegundos. Con instancias más
+grandes (50–100 recursos y grafos de dependencias más densos), donde el cálculo
+exacto se vuelve intratable y el Greedy se queda corto con mayor frecuencia, la
+ventaja del HC sería previsiblemente más pronunciada y consistente, dado que el
+espacio de búsqueda crece exponencialmente mientras que el costo de los swap
+moves crece de forma polinomial. Los resultados aquí reportados deben
+interpretarse como válidos para esta instancia concreta.
 \end{notebox}
 
-\subsubsection*{Rutas concretas encontradas por HC — Objetivo ML Engineer}
+\subsubsection*{Rutas óptimas — Objetivo ML Engineer}
 
-A continuación se muestran las rutas específicas producidas por el Hill
-Climbing para los presupuestos de 15h y 30h, ilustrando la progresión
-de recursos que el sistema selecciona al disponer de más tiempo.
+A continuación se muestran las rutas óptimas para los presupuestos de 15h y
+30h, ilustrando la progresión de recursos que el sistema selecciona al
+disponer de más tiempo.
 
 \begin{table}[H]
 \centering
 \small
-\caption{Ruta óptima HC — ML Engineer, 15h. Total: 15h $|$ Utilidad: 33.15}
+\caption{Ruta óptima — ML Engineer, 15h. Total: 15h $|$ Utilidad: 33.65}
 \begin{tabular}{r l c c}
 \toprule
 \textbf{\#} & \textbf{Recurso} & \textbf{Horas} & \textbf{Utilidad (boost)} \\
 \midrule
-1 & Python básico              & 3h & 5.0  \\
-2 & Álgebra lineal             & 5h & 9.1  \\
-3 & Cálculo diferencial        & 4h & 9.1  \\
-4 & NumPy y Pandas             & 3h & 10.0 \\
+1 & Álgebra lineal             & 5h & 9.1  \\
+2 & Python básico              & 3h & 5.0  \\
+3 & NumPy y Pandas             & 3h & 10.0 \\
+4 & Preprocesamiento de texto  & 2h & 7.0  \\
+5 & Visualización de datos     & 2h & 2.5  \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -586,17 +598,17 @@ de recursos que el sistema selecciona al disponer de más tiempo.
 \begin{table}[H]
 \centering
 \small
-\caption{Ruta óptima HC — ML Engineer, 30h. Total: 30h $|$ Utilidad: 61.35}
+\caption{Ruta óptima — ML Engineer, 30h. Total: 30h $|$ Utilidad: 61.35}
 \begin{tabular}{r l c c}
 \toprule
 \textbf{\#} & \textbf{Recurso} & \textbf{Horas} & \textbf{Utilidad (boost)} \\
 \midrule
-1 & Python básico                        & 3h & 5.0  \\
+1 & Cálculo diferencial                  & 4h & 9.1  \\
 2 & Álgebra lineal                       & 5h & 9.1  \\
-3 & Cálculo diferencial                  & 4h & 9.1  \\
+3 & Python básico                        & 3h & 5.0  \\
 4 & Probabilidad y estadística           & 4h & 5.0  \\
-5 & NumPy y Pandas                       & 3h & 10.0 \\
-6 & Preprocesamiento de texto            & 2h & 7.0  \\
+5 & Preprocesamiento de texto            & 2h & 7.0  \\
+6 & NumPy y Pandas                       & 3h & 10.0 \\
 7 & Machine learning clásico             & 6h & 7.0  \\
 8 & Evaluación y validación de modelos   & 3h & 9.1  \\
 \bottomrule
@@ -619,18 +631,18 @@ dependencias a medida que el presupuesto lo permite.
 \cmidrule(lr){2-4} \cmidrule(lr){5-8} \cmidrule(lr){9-9}
 \textbf{Presup.} & Horas & Util. & \% ópt & Horas & Util. & Iter. & \% ópt & Util. \\
 \midrule
-15h & 14h & 21.40 & 100\% & 14h & 21.40 & 5 & 100\% & 21.40 \\
-20h & 14h & 21.40 & 100\% & 14h & 21.40 & 5 & 100\% & 21.40 \\
-30h & 30h & 36.50 & 100\% & 30h & 36.50 & 7 & 100\% & 36.50 \\
+15h & 15h & 21.90 & \textbf{\color{alpsgreen}100\%} & 15h & 21.90 & 8 & \textbf{\color{alpsgreen}100\%} & 21.90 \\
+20h & 20h & 27.25 & \textbf{\color{alpsgreen}100\%} & 20h & 27.25 & 10 & \textbf{\color{alpsgreen}100\%} & 27.25 \\
+30h & 30h & 36.50 & \textbf{\color{alpsgreen}100\%} & 30h & 36.50 & 12 & \textbf{\color{alpsgreen}100\%} & 36.50 \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 El experimento NLP Researcher revela un patrón cualitativamente distinto. Los tres recursos de máxima utilidad (Transformer 9.5, Word Embeddings 8.5, RNN 8.5) requieren cadenas de dependencias de 40–52 horas —imposibles de alcanzar con presupuestos de 15h, 20h o incluso 30h.
 
-Como consecuencia, ambos algoritmos seleccionan solo recursos fundacionales de baja utilidad para el objetivo NLP. El espacio de búsqueda efectivo es tan pequeño que ambos convergen a la misma solución sin diferenciación. El óptimo exacto confirma que esos empates \emph{no son coincidencia}: tanto Greedy como HC alcanzan el 100\,\% del máximo demostrable en los tres presupuestos. Las iteraciones del HC se mantienen entre 5 y 7, confirmando que el vecindario es demasiado pequeño para explorar.
+Como consecuencia, ambos algoritmos seleccionan solo recursos fundacionales para el objetivo NLP, y \textbf{ambos alcanzan el óptimo exacto} (100\,\%) en los tres presupuestos: aquí no hay diferencia entre Greedy y HC. La estructura del problema —no la sofisticación del algoritmo— domina por completo el resultado.
 
-Notablemente, los resultados de 15h y 20h son idénticos: con 20h tampoco hay recursos adicionales alcanzables por encima del umbral, por lo que el presupuesto extra no puede invertirse en nada útil. Este comportamiento es un hallazgo genuino: el sistema es honesto respecto a lo que es alcanzable con el tiempo disponible.
+A diferencia del objetivo ML Engineer, aquí la utilidad sí crece con el presupuesto: de 21.90 (15h) a 27.25 (20h) a 36.50 (30h). El sistema invierte cada hora adicional disponible en recursos fundacionales de utilidad modesta —incluyendo \emph{Lógica y matemática discreta} (2.5), que un umbral de utilidad habría descartado pero que, al haber horas libres, contribuye a la utilidad total. Lo que el presupuesto extra \emph{no} consigue es acercar los recursos objetivo de NLP, que permanecen tras cadenas de 40h o más.
 
 \subsection{Análisis Monte Carlo del Hill Climbing}
 
@@ -644,8 +656,8 @@ La siguiente tabla presenta los resultados del análisis Monte Carlo ($N = 30$ r
 \toprule
 \textbf{Presup.} & \textbf{Media} & \textbf{Desv. Est.} & \textbf{Mínimo} & \textbf{Máximo} & \textbf{IC 95\%} \\
 \midrule
-15h & 33.15 & 0.00 & 33.15 & 33.15 & $[33.15,\ 33.15]$ \\
-20h & 42.20 & 0.00 & 42.20 & 42.20 & $[42.20,\ 42.20]$ \\
+15h & 33.65 & 0.00 & 33.65 & 33.65 & $[33.65,\ 33.65]$ \\
+20h & 42.70 & 0.00 & 42.70 & 42.70 & $[42.70,\ 42.70]$ \\
 30h & 61.35 & 0.00 & 61.35 & 61.35 & $[61.35,\ 61.35]$ \\
 \bottomrule
 \end{tabular}
@@ -655,7 +667,7 @@ Los resultados son contundentes: la desviación estándar es exactamente 0.00 en
 
 Este hallazgo tiene dos interpretaciones. Primero, el espacio de soluciones para este conjunto de scores tiene un único óptimo local dominante que el HC encuentra de forma determinista independientemente del punto de inicio aleatorio: todas las semillas conducen a la misma región óptima del espacio. Segundo, esto valida con 95\% de confianza estadística que los resultados de la ejecución individual son perfectamente representativos del rendimiento esperado del algoritmo.
 
-El óptimo exacto cierra la interpretación: ese único óptimo local dominante \emph{es} el óptimo global del problema (33.15, 42.20, 61.35), por lo que el std\,=\,0 no es solo estabilidad estadística sino la consecuencia de que todas las semillas convergen al máximo demostrable. La comparación con el Greedy es por tanto inequívoca: el HC iguala el óptimo en las 30 réplicas, mientras el Greedy (31.15, 40.20, 54.30) se queda entre el 88.5\,\% y el 95.3\,\% de ese máximo.
+El óptimo exacto cierra la interpretación: ese único óptimo dominante \emph{es} el óptimo global del problema (33.65, 42.70, 61.35), por lo que el std\,=\,0 no es solo estabilidad estadística sino la consecuencia de que todas las semillas convergen al máximo demostrable. En este objetivo el Greedy también alcanza el óptimo en 15h y 20h; solo en 30h se queda en 59.30 (96.7\,\%), que es justo el presupuesto donde el HC conserva su ventaja.
 
 \begin{notebox}
 \textbf{Nota crítica sobre el std\,=\,0.} Un valor de desviación estándar
@@ -672,28 +684,31 @@ el paisaje de soluciones tiene múltiples óptimos locales de calidad
 comparable, se esperaría una desviación estándar positiva y los reinicios
 cobrarían valor real. El std\,=\,0 es, en última instancia, otro indicador
 de que el tamaño del dataset limita la complejidad del problema para estos
-algoritmos.
+algoritmos. El único caso con varianza positiva en todo el estudio fue NLP
+Researcher a 15h ($\sigma = 0.09$), un primer indicio —tenue— de la
+estocasticidad que el HC exhibiría a mayor escala.
 \end{notebox}
 
 
-\subsubsection*{Rutas concretas encontradas por HC — Objetivo NLP Researcher}
+\subsubsection*{Rutas óptimas — Objetivo NLP Researcher}
 
-Las siguientes tablas ilustran las rutas producidas por el sistema para el
-objetivo NLP Researcher. El contraste con las rutas del objetivo ML Engineer
-es la evidencia más directa del fenómeno de \emph{dependency drag}.
+Las siguientes tablas ilustran las rutas óptimas para el objetivo NLP
+Researcher. El contraste con las rutas del objetivo ML Engineer es la
+evidencia más directa del fenómeno de \emph{dependency drag}.
 
 \begin{table}[H]
 \centering
 \small
-\caption{Ruta HC — NLP Researcher, 15h y 20h (idénticas). Total: 14h $|$ Utilidad: 21.40}
+\caption{Ruta óptima — NLP Researcher, 15h. Total: 15h $|$ Utilidad: 21.90}
 \begin{tabular}{r l c c}
 \toprule
 \textbf{\#} & \textbf{Recurso} & \textbf{Horas} & \textbf{Utilidad (boost)} \\
 \midrule
-1 & Álgebra lineal             & 5h & 5.3 \\
-2 & Cálculo diferencial        & 4h & 5.3 \\
-3 & Python básico              & 3h & 3.4 \\
-4 & Preprocesamiento de texto  & 2h & 7.3 \\
+1 & Lógica y matemática discreta & 3h & 2.5 \\
+2 & Cálculo diferencial          & 4h & 5.3 \\
+3 & Python básico                & 3h & 3.4 \\
+4 & NumPy y Pandas               & 3h & 3.4 \\
+5 & Preprocesamiento de texto    & 2h & 7.3 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -701,17 +716,35 @@ es la evidencia más directa del fenómeno de \emph{dependency drag}.
 \begin{table}[H]
 \centering
 \small
-\caption{Ruta HC — NLP Researcher, 30h. Total: 30h $|$ Utilidad: 36.50}
+\caption{Ruta óptima — NLP Researcher, 20h. Total: 20h $|$ Utilidad: 27.25}
 \begin{tabular}{r l c c}
 \toprule
 \textbf{\#} & \textbf{Recurso} & \textbf{Horas} & \textbf{Utilidad (boost)} \\
 \midrule
-1 & Álgebra lineal                       & 5h & 5.3 \\
-2 & Probabilidad y estadística           & 4h & 3.9 \\
-3 & Cálculo diferencial                  & 4h & 5.3 \\
-4 & Python básico                        & 3h & 3.4 \\
-5 & NumPy y Pandas                       & 3h & 3.4 \\
-6 & Preprocesamiento de texto            & 2h & 7.3 \\
+1 & Lógica y matemática discreta & 3h & 2.5 \\
+2 & Cálculo diferencial          & 4h & 5.3 \\
+3 & Álgebra lineal               & 5h & 5.3 \\
+4 & Python básico                & 3h & 3.4 \\
+5 & NumPy y Pandas               & 3h & 3.4 \\
+6 & Preprocesamiento de texto    & 2h & 7.3 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{table}[H]
+\centering
+\small
+\caption{Ruta óptima — NLP Researcher, 30h. Total: 30h $|$ Utilidad: 36.50}
+\begin{tabular}{r l c c}
+\toprule
+\textbf{\#} & \textbf{Recurso} & \textbf{Horas} & \textbf{Utilidad (boost)} \\
+\midrule
+1 & Cálculo diferencial                  & 4h & 5.3 \\
+2 & Álgebra lineal                       & 5h & 5.3 \\
+3 & Python básico                        & 3h & 3.4 \\
+4 & Probabilidad y estadística           & 4h & 3.9 \\
+5 & Preprocesamiento de texto            & 2h & 7.3 \\
+6 & NumPy y Pandas                       & 3h & 3.4 \\
 7 & Machine learning clásico             & 6h & 3.4 \\
 8 & Evaluación y validación de modelos   & 3h & 4.5 \\
 \bottomrule
@@ -723,7 +756,7 @@ Nótese que ninguno de los recursos directamente relevantes para el objetivo
 (8.5)— aparece en ninguna de las rutas. La cadena de dependencias mínima
 para alcanzar Word Embeddings requiere 40h, superando incluso el presupuesto
 máximo evaluado. El sistema se ve obligado a llenar la ruta con recursos
-fundacionales de baja relevancia directa (scores de 3.4 a 5.3); el único
+fundacionales de baja relevancia directa (scores de 2.5 a 5.3); el único
 recurso directamente relacionado con NLP que resulta alcanzable es
 \emph{Preprocesamiento de texto} (7.3), por estar a un solo nivel de
 profundidad en el grafo de dependencias.
@@ -739,7 +772,7 @@ dominio.
 
 \subsection{Dependency drag}
 
-La limitación más significativa es el fenómeno de \emph{dependency drag}: recursos de alta utilidad al final de cadenas largas de dependencias resultan inalcanzables con presupuestos pequeños. Para un investigador de NLP con 20h disponibles, el sistema no puede ofrecer nada sustancialmente útil porque los recursos objetivo requieren más de 40h solo en prerequisitos.
+La limitación más significativa es el fenómeno de \emph{dependency drag}: recursos de alta utilidad al final de cadenas largas de dependencias resultan inalcanzables con presupuestos pequeños. Para un investigador de NLP con 20h disponibles, el sistema no puede ofrecer nada directamente relevante a su objetivo —solo recursos fundacionales— porque los recursos objetivo requieren más de 40h solo en prerequisitos.
 
 \begin{notebox}
 \textbf{Mejora propuesta:} implementar un módulo de diagnóstico de alcanzabilidad que calcule el costo mínimo de cierre para los recursos de mayor utilidad e informe al usuario si ninguno es alcanzable con el presupuesto dado, sugiriendo el presupuesto mínimo necesario.
@@ -755,7 +788,7 @@ El modelo \texttt{llama-3.1-8b-instant} es propenso a comprimir scores hacia un 
 
 \subsection{Exploración limitada del Hill Climbing}
 
-Aunque la introducción de \emph{swap moves} mejoró sustancialmente la exploración del HC (de 1 a 9–11 iteraciones efectivas para ML Engineer), en instancias con alto dependency drag el espacio de búsqueda efectivo sigue siendo pequeño y ambos algoritmos convergen trivialmente.
+Aunque la introducción de \emph{swap moves} mejoró sustancialmente la exploración del HC (de 1 a 8–12 iteraciones efectivas para ML Engineer), en instancias con alto dependency drag el espacio de búsqueda efectivo sigue siendo pequeño y ambos algoritmos convergen trivialmente al óptimo.
 
 \begin{notebox}
 \textbf{Mejora propuesta:} implementar Simulated Annealing, permitiendo aceptar movimientos que empeoran temporalmente la utilidad con probabilidad decreciente, para explorar regiones globalmente prometedoras que el HC puro rechaza.
@@ -763,9 +796,9 @@ Aunque la introducción de \emph{swap moves} mejoró sustancialmente la explorac
 
 \subsection{Dataset sintético de tamaño reducido}
 
-Con 21 recursos el problema es suficientemente pequeño para que el Greedy encuentre soluciones near-óptimas en muchos casos. En datasets reales de mayor tamaño (100+ recursos) se esperaría una ventaja más pronunciada y consistente del HC.
+Con 21 recursos el problema es suficientemente pequeño para que tanto el Greedy como el HC encuentren el óptimo en casi todos los casos (5 de 6 configuraciones lo alcanzan con ambos algoritmos). En datasets reales de mayor tamaño (100+ recursos) se esperaría una ventaja más pronunciada y consistente del HC.
 
-Conviene ser explícito sobre una consecuencia de este tamaño: a la escala actual el óptimo exacto es directamente computable ($2^{18}$ evaluaciones, $<1$\,s), por lo que el Hill Climbing no es estrictamente necesario aquí —el solver exacto lo domina en calidad y es viable en tiempo. La justificación del HC es \emph{asintótica}: el knapsack con restricciones de precedencia es NP-difícil, de modo que la enumeración exhaustiva (y, más allá de cierto punto, también el ILP) deja de ser factible al crecer la instancia, mientras que el costo de los \emph{swap moves} crece de forma polinomial. Los resultados de este trabajo deben leerse, por tanto, como una \emph{validación de corrección} del HC en una instancia donde se conoce el óptimo, no como una demostración de su necesidad práctica a esta escala.
+Conviene ser explícito sobre una consecuencia de este tamaño: a la escala actual el óptimo exacto se calcula en milisegundos por branch and bound, por lo que el Hill Climbing no es estrictamente necesario aquí —el solver exacto lo domina en calidad y es viable en tiempo. La justificación del HC es \emph{asintótica}: el knapsack con restricciones de precedencia es NP-difícil, de modo que el cálculo exacto deja de ser factible al crecer la instancia, mientras que el costo de los \emph{swap moves} crece de forma polinomial. Los resultados de este trabajo deben leerse, por tanto, como una \emph{validación de corrección} de las heurísticas en una instancia donde se conoce el óptimo, no como una demostración de la necesidad práctica del HC a esta escala.
 
 \begin{notebox}
 \textbf{Mejora propuesta:} escalar el dataset a 50–100 recursos mediante generación procedural o extracción de currícula reales (roadmaps de plataformas educativas como Coursera o roadmap.sh).
@@ -776,7 +809,9 @@ Conviene ser explícito sobre una consecuencia de este tamaño: a la escala actu
 
 ALPS demuestra que es posible combinar técnicas de optimización combinatoria con modelos de lenguaje para construir un sistema de recomendación de rutas de aprendizaje personalizadas. El sistema resuelve formalmente un problema de satisfacción de restricciones con función objetivo, utilizando el LLM exclusivamente como componente de evaluación semántica y delegando la optimización a algoritmos clásicos.
 
-Los resultados experimentales confirman la hipótesis principal, ahora cuantificada contra el óptimo exacto: el Hill Climbing con swap moves \textbf{alcanza el óptimo demostrable} en los tres presupuestos del objetivo ML Engineer (100\,\%), superando al Greedy entre un 5 y un 13\,\% en utilidad; el Greedy, por sus decisiones irrevocables, se queda en el 88.5–95.3\,\% del máximo. Para el objetivo NLP Researcher ambos algoritmos alcanzan también el óptimo, pero coinciden entre sí porque el \emph{dependency drag} reduce el espacio factible a un único conjunto alcanzable de recursos fundacionales.
+El haber construido el óptimo exacto como referencia permite una conclusión más matizada —y más honesta— que una simple comparación entre heurísticas. A la escala de este dataset el problema resulta \emph{fácil}: el Hill Climbing alcanza el óptimo demostrable en las seis configuraciones y el Greedy en cinco de seis. La única diferencia aparece en el presupuesto más amplio del objetivo ML Engineer (30h), donde los \emph{swap moves} del HC le dan una ventaja de +3.5\,\% sobre el Greedy. La ventaja del HC es, por tanto, real pero marginal en esta instancia; su justificación frente al baseline es esencialmente asintótica y solo se manifestaría con claridad en instancias mayores donde el cálculo exacto se vuelve intratable.
+
+Este mismo proceso de validación contra el óptimo reveló que el umbral de utilidad del diseño inicial producía soluciones subóptimas (p.\,ej., NLP a 20h: una ruta de 27.25 era alcanzable pero el umbral limitaba la búsqueda a 21.40); eliminarlo corrigió el sesgo y es un ejemplo del valor de disponer de una verdad de referencia para auditar el propio sistema.
 
 El experimento con objetivo NLP Researcher expone con claridad el fenómeno de dependency drag: la estructura del grafo de dependencias determina en gran medida qué objetivos son alcanzables dentro de un presupuesto dado, independientemente de la calidad del algoritmo.
 

@@ -23,7 +23,7 @@ algorithms.
 - Three solvers for the precedence-constrained knapsack problem:
   - **Greedy** — fast deterministic baseline (utility-per-hour ratio).
   - **Hill Climbing** with random restarts and ADD/REMOVE/**SWAP** moves.
-  - **Exact optimum** — exhaustive enumeration, used as ground truth to
+  - **Exact optimum** — branch and bound, used as ground truth to
     measure each heuristic's optimality gap.
 - **Topological ordering** (Kahn's algorithm) of the selected resources.
 - **Monte Carlo analysis** (N=30) characterizing the Hill Climbing
